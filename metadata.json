@@ -1,0 +1,8 @@
+{
+  "name": "Linguamate.ai",
+  "description": "An AI-driven language learning ecosystem that combines conversational AI, cultural immersion, and powerful Gemini features for a personalized learning experience.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ]
+}
