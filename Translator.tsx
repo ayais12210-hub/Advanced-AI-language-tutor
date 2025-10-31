@@ -51,8 +51,8 @@ interface TranslatorProps {
 }
 
 const Translator: React.FC<TranslatorProps> = ({ nativeLanguage, learningLanguage }) => {
-  const [sourceLang, setSourceLang] = useState(learningLanguage);
-  const [targetLang, setTargetLang] = useState(nativeLanguage);
+  const [sourceLang, setSourceLang] = useState(nativeLanguage);
+  const [targetLang, setTargetLang] = useState(learningLanguage);
   const [sourceText, setSourceText] = useState('');
   const [analysisResult, setAnalysisResult] = useState<TranslationAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,11 +65,11 @@ const Translator: React.FC<TranslatorProps> = ({ nativeLanguage, learningLanguag
     const isTargetStillValid = targetLang.code === learningLanguage.code || targetLang.code === nativeLanguage.code;
 
     if (!isSourceStillValid || !isTargetStillValid || nativeLanguage.code === learningLanguage.code) {
-        setSourceLang(learningLanguage);
-        setTargetLang(nativeLanguage);
+        setSourceLang(nativeLanguage);
+        setTargetLang(learningLanguage);
     } else {
-        setSourceLang(languages.find(l => l.code === sourceLang.code) || learningLanguage);
-        setTargetLang(languages.find(l => l.code === targetLang.code) || nativeLanguage);
+        setSourceLang(languages.find(l => l.code === sourceLang.code) || nativeLanguage);
+        setTargetLang(languages.find(l => l.code === targetLang.code) || learningLanguage);
     }
   }, [nativeLanguage, learningLanguage, sourceLang.code, targetLang.code]);
 

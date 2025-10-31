@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Language, ExperienceLevel, UserGoal, UserInterest } from './types';
+import Onboarding from './Onboarding';
 
 interface LandingPageProps {
   onLaunchApp: () => void;
+  nativeLanguage: Language;
+  setNativeLanguage: (language: Language) => void;
+  learningLanguage: Language;
+  setLearningLanguage: (language: Language) => void;
+  experienceLevel: ExperienceLevel;
+  setExperienceLevel: (level: ExperienceLevel) => void;
+  userGoals: UserGoal[];
+  setUserGoals: (goals: UserGoal[]) => void;
+  userInterests: UserInterest[];
+  setUserInterests: (interests: UserInterest[]) => void;
 }
 
 const LogoIcon = () => (
@@ -13,7 +25,9 @@ const LogoIcon = () => (
 );
 
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
+const LandingPage: React.FC<LandingPageProps> = (props) => {
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   return (
     <div className="min-h-screen bg-background-primary text-text-primary font-sans antialiased flex flex-col">
       {/* Header */}
@@ -24,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
             <span className="font-heading text-2xl font-bold">Linguamate.ai</span>
           </div>
           <button 
-            onClick={onLaunchApp}
+            onClick={props.onLaunchApp}
             className="hidden md:block bg-background-secondary/50 text-text-primary font-semibold py-2 px-5 rounded-lg border border-background-tertiary hover:bg-background-secondary transition-colors duration-200"
           >
             Launch App
@@ -45,7 +59,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
             Linguamate.ai is your personal AI companion that merges neuroscience, emotion, and technology to teach languages naturally and intuitively.
           </p>
           <button 
-            onClick={onLaunchApp}
+            onClick={() => setShowOnboarding(true)}
             className="mt-10 bg-accent-primary hover:bg-accent-primary-dark text-background-primary font-bold text-lg py-4 px-10 rounded-full shadow-lg shadow-accent-primary/20 transition-all duration-300 ease-in-out transform hover:scale-105"
           >
             Get Started For Free
@@ -59,6 +73,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
           &copy; {new Date().getFullYear()} Linguamate.ai — An Enlightened Approach to Language.
         </div>
       </footer>
+      
+      <Onboarding 
+        isOpen={showOnboarding} 
+        onClose={() => setShowOnboarding(false)}
+        onComplete={props.onLaunchApp}
+        {...props}
+      />
     </div>
   );
 };

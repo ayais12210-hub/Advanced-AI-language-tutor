@@ -1,92 +1,56 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { Language, TextAnalysis } from './types';
+import React, { useState, useCallback, useRef, FormEvent, useEffect } from 'react';
+import { GoogleGenAI, Type } from "@google/genai";
+import ReactMarkdown from 'react-markdown';
+import { Language, ChatMessage } from './types';
 import SmartSuggestions from './SmartSuggestions';
 import { PageHeader } from './PageHeader';
-import { TextAnalysisCard } from './TextAnalysisCard';
 
-// Helper functions for audio decoding
-function decode(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
+const Spinner = () => (<svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>);
+const UploadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-text-secondary/60 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>);
 
-async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
-
-
-const Spinner = () => (
-    <div className="flex flex-col items-center justify-center gap-4">
-        <svg className="animate-spin h-8 w-8 text-accent-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <p className="text-lg text-text-secondary">Analyzing your text...</p>
-    </div>
-);
-
-const ButtonSpinner = () => (
-    <svg className="animate-spin h-5 w-5 text-background-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-);
-
-interface AnalyzerProps {
+interface ContentAnalyzerProps {
   nativeLanguage: Language;
   learningLanguage: Language;
   setNativeLanguage: (language: Language) => void;
   setLearningLanguage: (language: Language) => void;
 }
 
-const Analyzer: React.FC<AnalyzerProps> = ({ learningLanguage, nativeLanguage, setNativeLanguage, setLearningLanguage }) => {
-    const [inputText, setInputText] = useState('');
-    const [analysisResult, setAnalysisResult] = useState<TextAnalysis | null>(null);
+const ContentAnalyzer: React.FC<ContentAnalyzerProps> = ({ learningLanguage, nativeLanguage, setNativeLanguage, setLearningLanguage }) => {
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [userInput, setUserInput] = useState('');
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [isTtsLoading, setIsTtsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
-    
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const endOfMessagesRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
-        return () => {
-            if (audioSource) audioSource.stop();
-        };
-    }, [audioSource]);
+        endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [chatHistory, isLoading]);
+
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64data = reader.result as string;
+                resolve(base64data.substring(base64data.indexOf(',') + 1));
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    };
 
     const generateAnalyzerSuggestions = useCallback(async (): Promise<string[]> => {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-        const prompt = `You are a creative assistant for a language learner. The user is learning ${learningLanguage.name}. Generate 3 short, sample sentences in ${learningLanguage.name} that contain common grammatical mistakes for learners of this language. Provide only a JSON array of strings.`;
+        const prompt = `You are a creative assistant. The user has uploaded an image and is learning ${learningLanguage.name}. Generate 3 interesting, open-ended questions in ${learningLanguage.name} that someone could ask about an image. Provide only a JSON array of strings.`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING }
-                }
+                responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
             }
         });
 
@@ -100,159 +64,158 @@ const Analyzer: React.FC<AnalyzerProps> = ({ learningLanguage, nativeLanguage, s
     }, [learningLanguage]);
 
     const handleSuggestionClick = (suggestion: string) => {
-        setInputText(suggestion);
+        setUserInput(suggestion);
     };
 
-    const handleAnalyze = async () => {
-        if (!inputText.trim() || isLoading) return;
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+            setChatHistory([]);
+            setError(null);
+            setUserInput('');
+        }
+    };
+
+    const handleClearImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+        setChatHistory([]);
+        setError(null);
+    };
+
+    const handleSendMessage = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!userInput.trim() || !imageFile || isLoading) return;
 
         setIsLoading(true);
         setError(null);
-        setAnalysisResult(null);
-
-        const systemInstruction = `You are a world-class AI Language Coach. The user is writing in ${learningLanguage.name}. Their native language is ${nativeLanguage.name}. Your task is to analyze the provided text and give comprehensive feedback. Respond ONLY with a JSON object with the following schema.
-- correctedText: The user's text, corrected for grammar, spelling, and style to sound natural and fluent in ${learningLanguage.name}.
-- keyFeedbackPoints: A list of 2-3 brief, high-level summaries of the main corrections or improvements made.
-- sound: A phonetic breakdown of the correctedText (IPA, syllables, stress).
-- meaningAnalysis: Analyze the meaning, nuance, register (formal/informal), and any potential ambiguities in the user's original text.
-- structureAnalysis: Analyze the grammar and syntax of the user's original text, explaining any errors.
-- usageAnalysis: Explain the typical context, situations, and patterns where the corrected phrase would be used.
-- advancedSummary: A detailed synthesis of all feedback for advanced learners.
-- alternativePhrasings: A list of other valid ways to express the original idea.
-All analysis fields (except correctedText and sound) MUST be in ${nativeLanguage.name} to ensure the user understands.`;
-
+        
+        const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: 'user', parts: [{ text: userInput }] };
+        setChatHistory(prev => [...prev, userMessage]);
+        setUserInput('');
+        
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const base64Data = await blobToBase64(imageFile);
+            
+            const imagePart = { inlineData: { mimeType: imageFile.type, data: base64Data } };
+            const textPart = { text: `The user is a ${nativeLanguage.name} speaker learning ${learningLanguage.name}. Please respond in ${learningLanguage.name}, and provide a translation in ${nativeLanguage.name} like this: *(${nativeLanguage.name}: Your translation here)*. User's query: ${userInput}` };
+
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
-                contents: `Please analyze the following text written in ${learningLanguage.name}: "${inputText}"`,
-                config: {
-                    systemInstruction,
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            correctedText: { type: Type.STRING },
-                            keyFeedbackPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            sound: {
-                                type: Type.OBJECT,
-                                properties: { text: { type: Type.STRING }, ipa: { type: Type.STRING }, syllables: { type: Type.STRING } },
-                                required: ['text', 'ipa', 'syllables'],
-                            },
-                            meaningAnalysis: { type: Type.STRING },
-                            structureAnalysis: { type: Type.STRING },
-                            usageAnalysis: { type: Type.STRING },
-                            advancedSummary: { type: Type.STRING },
-                            alternativePhrasings: { type: Type.ARRAY, items: { type: Type.STRING } },
-                        },
-                        required: ['correctedText', 'keyFeedbackPoints', 'sound', 'meaningAnalysis', 'structureAnalysis', 'usageAnalysis', 'advancedSummary', 'alternativePhrasings'],
-                    },
-                },
+                contents: { parts: [imagePart, textPart] },
             });
-            
-            const result = JSON.parse(response.text);
-            setAnalysisResult(result);
+
+            const modelMessage: ChatMessage = { id: `model-${Date.now()}`, role: 'model', parts: [{ text: response.text }] };
+            setChatHistory(prev => [...prev, modelMessage]);
 
         } catch (err) {
             console.error(err);
-            setError('An error occurred during analysis. The model might not be able to process this specific text. Please try again with a different input.');
+            const errorMessage = 'Sorry, I encountered an error analyzing the image.';
+            setError(errorMessage);
+            setChatHistory(prev => [...prev, { id: `error-${Date.now()}`, role: 'model', parts: [{ text: errorMessage }] }]);
         } finally {
             setIsLoading(false);
         }
     };
-    
-    const handlePlayAudio = async () => {
-        const textToSpeak = analysisResult?.correctedText;
-        if (!textToSpeak || isLoading || isTtsLoading) return;
-
-        setIsTtsLoading(true);
-        setError(null);
-        if (audioSource) audioSource.stop();
-
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash-preview-tts",
-                contents: [{ parts: [{ text: textToSpeak }] }],
-                config: {
-                    responseModalities: [Modality.AUDIO],
-                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
-                },
-            });
-
-            const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-            if (!base64Audio) throw new Error("No audio data received.");
-
-            const outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-            const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContext, 24000, 1);
-            
-            const source = outputAudioContext.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(outputAudioContext.destination);
-            source.start();
-            setAudioSource(source);
-
-        } catch (err) {
-            console.error(err);
-            setError('Failed to generate speech.');
-        } finally {
-            setIsTtsLoading(false);
-        }
-    };
-
 
     return (
         <div className="p-4 sm:p-8 h-full flex flex-col bg-background-primary text-text-primary">
             <PageHeader
-                title="Text Analyzer"
-                description={`Get feedback on your ${learningLanguage.name} writing to improve grammar, style, and clarity.`}
+                title="Content Analyzer"
+                description={`Upload an image and ask questions in ${learningLanguage.name} to understand it.`}
                 nativeLanguage={nativeLanguage}
                 learningLanguage={learningLanguage}
                 setNativeLanguage={setNativeLanguage}
                 setLearningLanguage={setLearningLanguage}
             />
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div className="flex flex-col gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                        <textarea
-                            value={inputText}
-                            onChange={(e) => setInputText(e.target.value)}
-                            placeholder={`Paste your ${learningLanguage.name} text here...`}
-                            className="flex-1 w-full bg-background-secondary rounded-lg border border-background-tertiary/50 p-4 text-text-primary placeholder-text-secondary/70 focus:ring-2 focus:ring-accent-primary focus:outline-none resize-none"
-                            disabled={isLoading}
-                        />
-                         <SmartSuggestions
-                            generateSuggestions={generateAnalyzerSuggestions}
-                            onSuggestionClick={handleSuggestionClick}
-                            isDisabled={isLoading}
-                        />
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 overflow-hidden">
+                {/* Left Column: Image Upload */}
+                <div className="lg:col-span-1 flex flex-col gap-4 bg-background-secondary/50 rounded-lg border border-background-tertiary/50 p-4">
+                    <div 
+                        onClick={() => !isLoading && fileInputRef.current?.click()}
+                        className={`flex-1 bg-background-secondary rounded-lg border-2 border-dashed border-background-tertiary flex items-center justify-center p-4 transition-colors ${!isLoading && !imagePreview ? 'cursor-pointer hover:border-accent-primary' : ''}`}
+                    >
+                        {imagePreview ? (
+                            <img src={imagePreview} alt="Uploaded content" className="max-w-full max-h-full object-contain rounded-md" />
+                        ) : (
+                            <div className="text-center text-text-secondary/70 p-4">
+                                <UploadIcon />
+                                <p className="mt-2 font-semibold">Click to upload an image</p>
+                                <p className="text-sm">PNG, JPG, WEBP</p>
+                            </div>
+                        )}
                     </div>
-                     <button onClick={handleAnalyze} disabled={isLoading || !inputText.trim()} className="w-full bg-accent-primary text-background-primary font-bold py-3 px-5 rounded-lg hover:bg-accent-primary-dark disabled:bg-background-tertiary disabled:text-text-secondary/50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center text-lg">
-                        {isLoading ? <ButtonSpinner /> : 'Analyze Text'}
-                    </button>
-                </div>
-                <div className="bg-background-secondary rounded-lg border border-background-tertiary/50 p-4 overflow-y-auto">
-                    {isLoading ? (
-                        <div className="h-full flex items-center justify-center">
-                            <Spinner />
-                        </div>
-                    ) : error ? (
-                        <div className="h-full flex items-center justify-center text-red-400 p-4 text-center">{error}</div>
-                    ) : analysisResult ? (
-                        <TextAnalysisCard 
-                            analysis={analysisResult}
-                            onPlayAudio={handlePlayAudio}
-                            isTtsLoading={isTtsLoading}
-                        />
-                    ) : (
-                        <div className="h-full flex items-center justify-center text-text-secondary text-center">
-                            <p>Analysis results will appear here.</p>
-                        </div>
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="hidden" disabled={isLoading}/>
+                    {imagePreview && (
+                        <button onClick={handleClearImage} disabled={isLoading} className="w-full bg-background-tertiary text-text-secondary font-semibold py-2 px-4 rounded-lg hover:bg-background-tertiary/70 disabled:opacity-50 transition-colors">
+                            Clear Image
+                        </button>
                     )}
+                </div>
+
+                {/* Right Column: Chat */}
+                <div className="lg:col-span-2 flex flex-col bg-background-secondary/50 rounded-lg border border-background-tertiary/50 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {!imagePreview ? (
+                            <div className="text-center text-text-secondary h-full flex items-center justify-center">
+                                <p>Please upload an image to begin the analysis.</p>
+                            </div>
+                        ) : chatHistory.length === 0 && (
+                            <div className="text-center text-text-secondary h-full flex items-center justify-center">
+                                <p>Ask a question about the image in {learningLanguage.name}.</p>
+                            </div>
+                        )}
+                        {chatHistory.map((message) => (
+                            <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-xl px-5 py-3 rounded-2xl shadow-md ${message.role === 'user' ? 'bg-accent-primary text-background-primary' : 'bg-background-tertiary text-text-primary'}`}>
+                                    <div className="prose prose-invert prose-sm max-w-none">
+                                        <ReactMarkdown>{message.parts[0].text}</ReactMarkdown>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {isLoading && (
+                            <div className="flex justify-start">
+                                <div className="max-w-xl px-5 py-3 rounded-2xl shadow-md bg-background-tertiary text-text-primary flex items-center">
+                                   <div className="w-2 h-2 bg-accent-primary rounded-full animate-pulse mr-2 delay-75"></div>
+                                   <div className="w-2 h-2 bg-accent-primary rounded-full animate-pulse mr-2 delay-150"></div>
+                                   <div className="w-2 h-2 bg-accent-primary rounded-full animate-pulse delay-300"></div>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={endOfMessagesRef} />
+                    </div>
+                    <div className="border-t border-background-tertiary/50 p-4 bg-background-secondary">
+                        <form onSubmit={handleSendMessage} className="flex items-start space-x-4">
+                            <div className="flex-1 flex flex-col gap-2">
+                                <textarea
+                                    value={userInput}
+                                    onChange={(e) => setUserInput(e.target.value)}
+                                    placeholder={imageFile ? `Ask about the image in ${learningLanguage.name}...` : "Upload an image first"}
+                                    className="w-full bg-background-tertiary rounded-lg p-3 text-text-primary placeholder-text-secondary focus:ring-2 focus:ring-accent-primary focus:outline-none resize-none"
+                                    rows={2}
+                                    disabled={isLoading || !imageFile}
+                                />
+                                {imageFile && (
+                                    <SmartSuggestions
+                                        generateSuggestions={generateAnalyzerSuggestions}
+                                        onSuggestionClick={handleSuggestionClick}
+                                        isDisabled={isLoading || !imageFile}
+                                    />
+                                )}
+                            </div>
+                            <button type="submit" disabled={isLoading || !userInput.trim() || !imageFile} className="bg-accent-primary text-white font-semibold py-3 px-5 rounded-lg hover:bg-accent-primary-dark disabled:bg-background-tertiary disabled:cursor-not-allowed transition-colors duration-200 self-stretch flex items-center justify-center">
+                                {isLoading ? <Spinner /> : <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-export default Analyzer;
+export default ContentAnalyzer;

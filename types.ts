@@ -8,9 +8,15 @@ export interface Language {
 }
 
 export interface ChatMessage {
+  id: string;
   role: 'user' | 'model';
   parts: { text: string }[];
+  sources?: GroundingChunk[];
 }
+
+export type TutorStyle = 'Standard' | 'Patient' | 'Concise';
+export type ConversationMode = 'Fast' | 'Smart' | 'Genius';
+
 
 export type FeatureId = 
   | 'chat'
@@ -21,7 +27,7 @@ export type FeatureId =
   | 'imageEdit'
   | 'videoGen'
   | 'grounding'
-  | 'analyzer';
+  | 'contentAnalyzer';
 
 export interface GroundingChunk {
   web?: {
@@ -64,17 +70,10 @@ export interface TranslationAnalysis {
     alternativeTranslations: string[];
 }
 
-// For the new advanced analyzer
-export interface TextAnalysis {
-    correctedText: string;
-    keyFeedbackPoints: string[];
-    sound: PronunciationAnalysis;
-    meaningAnalysis: string;
-    structureAnalysis: string;
-    usageAnalysis: string;
-    advancedSummary: string;
-    alternativePhrasings: string[];
-}
+// For the new onboarding flow
+export type ExperienceLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Fluent';
+export type UserGoal = 'Travel' | 'Career' | 'School' | 'Connect' | 'Brain Training' | 'Cultural Immersion';
+export type UserInterest = 'Technology' | 'Food' | 'Art & Culture' | 'Sports' | 'Science' | 'History' | 'Movies & TV' | 'Music';
 
 
 declare global {

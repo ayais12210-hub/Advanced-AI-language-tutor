@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FeatureId, Language } from './types';
+import { FeatureId, Language, ExperienceLevel, UserGoal, UserInterest } from './types';
 import Sidebar from './Sidebar';
 import Chat from './Chat';
 import ImageGen from './ImageGen';
@@ -21,7 +21,7 @@ const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   videoGen: VideoGen,
   liveConvo: LiveConvo,
   grounding: Grounding,
-  analyzer: Analyzer,
+  contentAnalyzer: Analyzer,
   tts: TTS,
 };
 
@@ -30,12 +30,31 @@ const App: React.FC = () => {
   const [activeFeature, setActiveFeature] = useState<FeatureId>('chat');
   const [nativeLanguage, setNativeLanguage] = useState<Language>(languages.find(l => l.code === 'en') || languages[0]);
   const [learningLanguage, setLearningLanguage] = useState<Language>(languages.find(l => l.code === 'es') || languages[1]);
+  
+  // State for user profile, collected from onboarding
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('Beginner');
+  const [userGoals, setUserGoals] = useState<UserGoal[]>([]);
+  const [userInterests, setUserInterests] = useState<UserInterest[]>([]);
 
 
   const ActiveComponent = featureComponents[activeFeature];
   
   if (!showDashboard) {
-    return <LandingPage onLaunchApp={() => setShowDashboard(true)} />;
+    return (
+      <LandingPage 
+        onLaunchApp={() => setShowDashboard(true)} 
+        nativeLanguage={nativeLanguage}
+        learningLanguage={learningLanguage}
+        setNativeLanguage={setNativeLanguage}
+        setLearningLanguage={setLearningLanguage}
+        experienceLevel={experienceLevel}
+        setExperienceLevel={setExperienceLevel}
+        userGoals={userGoals}
+        setUserGoals={setUserGoals}
+        userInterests={userInterests}
+        setUserInterests={setUserInterests}
+      />
+    );
   }
 
   return (
