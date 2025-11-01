@@ -6,15 +6,17 @@ import UserStatsDisplay from './UserStats';
 import LessonModal from './LessonModal';
 import { masteryData } from './MasteryPathData';
 
-const calculateLevel = (xp: number) => {
+const calculateLevel = (totalXp: number) => {
     let level = 1;
     let requiredXp = 100;
-    while (xp >= requiredXp) {
-        xp -= requiredXp;
+    let currentXpInLevel = totalXp;
+
+    while (currentXpInLevel >= requiredXp) {
+        currentXpInLevel -= requiredXp;
         level++;
         requiredXp = Math.floor(requiredXp * 1.5);
     }
-    return { level, xp, xpToNextLevel: requiredXp };
+    return { level, xp: currentXpInLevel, xpToNextLevel: requiredXp };
 };
 
 interface LearningHubProps {
@@ -22,17 +24,23 @@ interface LearningHubProps {
   learningLanguage: Language;
   setNativeLanguage: (language: Language) => void;
   setLearningLanguage: (language: Language) => void;
+  addXp: (amount: number) => void;
+  stats: { xpPoints: number }; // Receive total XP from App
 }
 
-const LearningHub: React.FC<LearningHubProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage }) => {
+const LearningHub: React.FC<LearningHubProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, addXp, stats }) => {
     const [completedLevels, setCompletedLevels] = useState<Set<string>>(new Set());
     const [activeLevel, setActiveLevel] = useState<MasteryLevel | null>(null);
-    const [userStats, setUserStats] = useState<UserStats>({
-        level: 1,
-        xp: 0,
-        xpToNextLevel: 100,
-        achievements: [],
-    });
+
+    const userDisplayStats = useMemo(() => {
+        const { level, xp, xpToNextLevel } = calculateLevel(stats.xpPoints);
+        return {
+            level,
+            xp,
+            xpToNextLevel,
+            achievements: [], // Achievements are managed globally now
+        };
+    }, [stats.xpPoints]);
 
     const allLevels = useMemo(() => masteryData.flatMap(tier => tier.levels), []);
 
@@ -46,25 +54,14 @@ const LearningHub: React.FC<LearningHubProps> = ({ nativeLanguage, learningLangu
     };
 
     const handleCompleteLevel = (levelId: string) => {
-        if (completedLevels.has(levelId)) {
+        const levelData = allLevels.find(l => l.id === levelId);
+        if (!levelData || completedLevels.has(levelId)) {
             setActiveLevel(null);
             return; 
         }
 
-        const levelData = allLevels.find(l => l.id === levelId);
-        if (!levelData) return;
-
         setCompletedLevels(prev => new Set(prev).add(levelId));
-        
-        const newTotalXp = userStats.xp + levelData.xp;
-        const { level, xp, xpToNextLevel } = calculateLevel(userStats.level === 1 && userStats.xp === 0 ? levelData.xp : newTotalXp);
-
-        setUserStats(prev => ({
-            ...prev,
-            level,
-            xp: newTotalXp,
-            xpToNextLevel,
-        }));
+        addXp(levelData.xp); // Update global XP
         
         setActiveLevel(null);
     };
@@ -84,7 +81,7 @@ const LearningHub: React.FC<LearningHubProps> = ({ nativeLanguage, learningLangu
                 setLearningLanguage={setLearningLanguage}
             />
 
-            <UserStatsDisplay stats={userStats} />
+            <UserStatsDisplay stats={userDisplayStats} />
 
             <div className="flex-1 overflow-y-auto mt-4">
                 <MasteryPath

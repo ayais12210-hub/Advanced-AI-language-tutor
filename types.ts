@@ -147,11 +147,23 @@ export interface UserLessonStats {
   streak: number;
 }
 
-// New types for Profile page
+// --- NEW/UPDATED TYPES FOR FUNCTIONAL PROFILE ---
+export interface User {
+    name: string;
+    email: string;
+    avatarInitial: string;
+}
+
+export interface JournalEntry {
+    id: string;
+    date: string;
+    content: string;
+}
+
 export interface ProfileStats {
   totalChats: number;
   currentStreak: number;
-  wordsLearned: number;
+  wordsLearned: number; // For now, let's tie this to completed lessons * a multiplier
   xpPoints: number;
 }
 
@@ -181,6 +193,30 @@ export interface LeaderboardUser {
   level: number;
   streak: number;
   isCurrentUser?: boolean;
+}
+
+// --- NEW TYPES FOR CONTENT ANALYZER ---
+export type SourceType = 'pdf' | 'audio' | 'website' | 'youtube' | 'text' | 'gdoc';
+
+export interface Source {
+  id: string;
+  type: SourceType;
+  title: string;
+  content: string; // For text, URL summaries
+  timestamp: string;
+}
+
+export interface Notebook {
+  id: string;
+  title: string;
+  sources: Source[];
+  createdAt: string;
+  audioSummary?: string;
+  audioData?: string; // base64 encoded
+  textSummary?: string;
+  keyPoints?: string;
+  faq?: string;
+  chatHistory?: ChatMessage[];
 }
 
 

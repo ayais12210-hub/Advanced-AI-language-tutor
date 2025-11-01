@@ -39,11 +39,13 @@ const features: { id: FeatureId; name: string; icon: React.ReactElement }[] = [
 interface SidebarProps {
   activeFeature: FeatureId;
   setActiveFeature: (feature: FeatureId) => void;
+  isLoggedIn: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   activeFeature, 
   setActiveFeature,
+  isLoggedIn,
 }) => {
   return (
     <aside className="w-64 bg-background-secondary text-text-secondary flex flex-col p-4 border-r border-background-tertiary/50">
@@ -80,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             aria-current={activeFeature === 'profile' ? 'page' : undefined}
         >
             <ProfileIcon />
-            <span>Profile</span>
+            <span>{isLoggedIn ? 'Profile' : 'Sign In'}</span>
         </button>
         <button
             onClick={() => setActiveFeature('settings')}

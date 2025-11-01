@@ -50,9 +50,10 @@ interface ChatProps {
   learningLanguage: Language;
   setNativeLanguage: (language: Language) => void;
   setLearningLanguage: (language: Language) => void;
+  incrementChatCount: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage }) => {
+const Chat: React.FC<ChatProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, incrementChatCount }) => {
   const [userInput, setUserInput] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -143,6 +144,7 @@ Generate 3 natural, engaging, and contextually relevant follow-up questions or r
 
     const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: 'user', parts: [{ text: messageToSend }] };
     setChatHistory(prev => [...prev, userMessage]);
+    incrementChatCount(); // Update global stats
     
     if (!messageOverride) {
       setUserInput('');

@@ -27,9 +27,10 @@ interface LessonsProps {
   learningLanguage: Language;
   setNativeLanguage: (language: Language) => void;
   setLearningLanguage: (language: Language) => void;
+  addXp: (amount: number) => void;
 }
 
-const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage }) => {
+const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, addXp }) => {
     const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
     const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
     const [userStats, setUserStats] = useState<UserLessonStats>({
@@ -59,8 +60,9 @@ const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, set
 
         const newCompleted = new Set(completedLessons).add(lessonId);
         setCompletedLessons(newCompleted);
+        addXp(lesson.xp); // Update global stats
 
-        // Update stats
+        // Update local stats for this page's display
         const currentTotalXp = userStats.xp + (userStats.level > 1 ? allLessons.filter(l => completedLessons.has(l.id)).reduce((sum, l) => sum + l.xp, 0) : 0);
         const newTotalXp = currentTotalXp + lesson.xp;
         const { level, xp, xpToNextLevel } = calculateLevel(newTotalXp);

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { FeatureId, Language, ExperienceLevel, UserGoal, UserInterest } from './types';
-// FIX: Import the `languages` array to make it available in this component.
+import React, { useState, useEffect, useCallback } from 'react';
+import { FeatureId, Language, ExperienceLevel, UserGoal, UserInterest, ProfileStats, Badge, User, JournalEntry } from './types';
 import { languages } from './languages';
+import { badgeMasterList } from './achievements';
 import Sidebar from './Sidebar';
 import Chat from './Chat';
 import ImageGen from './ImageGen';
@@ -14,7 +14,7 @@ import TTS from './TTS';
 import LandingPage from './LandingPage';
 import Translator from './Translator';
 import Lessons from './Lessons';
-import LearningHub from './MasteryHub'; // Renamed component
+import LearningHub from './MasteryHub';
 import Settings from './Settings';
 import Help from './Help';
 import PrivacyPolicy from './PrivacyPolicy';
@@ -24,7 +24,7 @@ const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   chat: Chat,
   translator: Translator,
   lessons: Lessons,
-  learningHub: LearningHub, // Renamed feature
+  learningHub: LearningHub,
   imageGen: ImageGen,
   imageEdit: ImageEdit,
   videoGen: VideoGen,
@@ -38,16 +38,125 @@ const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   profile: Profile,
 };
 
+// A custom hook to manage state with localStorage persistence
+function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+    const [state, setState] = useState<T>(() => {
+        try {
+            const storedValue = window.localStorage.getItem(`linguamate_${key}`);
+            return storedValue ? JSON.parse(storedValue) : defaultValue;
+        } catch (error) {
+            console.error(`Error reading from localStorage for key "${key}"`, error);
+            return defaultValue;
+        }
+    });
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(`linguamate_${key}`, JSON.stringify(state));
+        } catch (error) {
+            console.error(`Error writing to localStorage for key "${key}"`, error);
+        }
+    }, [key, state]);
+
+    return [state, setState];
+}
+
+
 const App: React.FC = () => {
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = usePersistentState('showDashboard', false);
   const [activeFeature, setActiveFeature] = useState<FeatureId>('chat');
-  const [nativeLanguage, setNativeLanguage] = useState<Language>(languages.find(l => l.code === 'en') || languages[0]);
-  const [learningLanguage, setLearningLanguage] = useState<Language>(languages.find(l => l.code === 'es') || languages[1]);
+  const [nativeLanguage, setNativeLanguage] = usePersistentState<Language>('nativeLanguage', languages.find(l => l.code === 'en') || languages[0]);
+  const [learningLanguage, setLearningLanguage] = usePersistentState<Language>('learningLanguage', languages.find(l => l.code === 'es') || languages[1]);
   
-  // State for user profile, collected from onboarding
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('Beginner');
-  const [userGoals, setUserGoals] = useState<UserGoal[]>([]);
-  const [userInterests, setUserInterests] = useState<UserInterest[]>([]);
+  // Onboarding & Profile State
+  const [experienceLevel, setExperienceLevel] = usePersistentState<ExperienceLevel>('experienceLevel', 'Beginner');
+  const [userGoals, setUserGoals] = usePersistentState<UserGoal[]>('userGoals', []);
+  const [userInterests, setUserInterests] = usePersistentState<UserInterest[]>('userInterests', []);
+
+  // --- NEW CENTRALIZED USER STATE ---
+  const [isLoggedIn, setIsLoggedIn] = usePersistentState('isLoggedIn', false);
+  const [user, setUser] = usePersistentState<User | null>('user', null);
+  const [userStats, setUserStats] = usePersistentState<ProfileStats>('userStats', {
+    totalChats: 0,
+    currentStreak: 1,
+    wordsLearned: 0,
+    xpPoints: 0,
+  });
+  // FIX: The usePersistentState hook expects a value for its defaultValue, not a lazy initializer function.
+  // The function wrapper is removed to pass the array directly, resolving the type error.
+  const [userBadges, setUserBadges] = usePersistentState<Badge[]>('userBadges', badgeMasterList.map(b => ({ ...b, earned: false })));
+  const [journalEntries, setJournalEntries] = usePersistentState<JournalEntry[]>('journalEntries', []);
+
+  // --- STATE UPDATE HANDLERS ---
+  const handleSignIn = () => {
+    setUser({ name: 'Alex Rivera', email: 'alex.rivera@example.com', avatarInitial: 'A' });
+    setIsLoggedIn(true);
+    // In a real app, you'd fetch user data here.
+  };
+
+  const handleSignOut = () => {
+    setIsLoggedIn(false);
+    setUser(null);
+    // Optionally reset stats on sign out, or persist them per-account
+    // For this demo, we'll keep them to show persistence.
+  };
+
+  const addXp = useCallback((amount: number) => {
+    setUserStats(prev => ({ ...prev, xpPoints: prev.xpPoints + amount }));
+  }, [setUserStats]);
+
+  const incrementChatCount = useCallback(() => {
+    setUserStats(prev => ({ ...prev, totalChats: prev.totalChats + 1 }));
+  }, [setUserStats]);
+  
+  const handleJournalSave = useCallback((content: string) => {
+    const newEntry: JournalEntry = {
+      id: `journal-${Date.now()}`,
+      date: new Date().toISOString(),
+      content,
+    };
+    setJournalEntries(prev => [newEntry, ...prev]);
+  }, [setJournalEntries]);
+  
+  // TODO: Implement a real streak logic based on activity dates
+  const updateStreak = useCallback(() => {
+      // This is a placeholder. A real implementation would check localStorage for the
+      // last active date and compare it to the current date.
+  }, []);
+
+  // Effect to check for and award badges when stats change
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const checkAndAwardBadges = () => {
+        let changed = false;
+        const updatedBadges = userBadges.map(badge => {
+            if (badge.earned) return badge; // Already earned
+
+            let justEarned = false;
+            switch(badge.id) {
+                case 'c1': if (userStats.totalChats >= 1) justEarned = true; break;
+                case 'c2': if (userStats.totalChats >= 50) justEarned = true; break;
+                case 'x1': if (userStats.xpPoints >= 1000) justEarned = true; break;
+                case 'x2': if (userStats.xpPoints >= 10000) justEarned = true; break;
+                case 'x3': if (userStats.xpPoints >= 50000) justEarned = true; break;
+                case 'p1': if (journalEntries.length >= 1) justEarned = true; break;
+                // Add more checks here for other badges
+            }
+            
+            if (justEarned) {
+                changed = true;
+                return { ...badge, earned: true, earnedDate: new Date().toLocaleDateString('en-US') };
+            }
+            return badge;
+        });
+
+        if (changed) {
+            setUserBadges(updatedBadges);
+        }
+    };
+    checkAndAwardBadges();
+  }, [userStats, journalEntries.length, isLoggedIn, setUserBadges, userBadges]);
 
 
   const ActiveComponent = featureComponents[activeFeature];
@@ -75,9 +184,11 @@ const App: React.FC = () => {
       <Sidebar 
         activeFeature={activeFeature} 
         setActiveFeature={setActiveFeature}
+        isLoggedIn={isLoggedIn}
       />
       <main className="flex-1 overflow-y-auto">
         <ActiveComponent 
+          // Standard props
           nativeLanguage={nativeLanguage} 
           learningLanguage={learningLanguage}
           setNativeLanguage={setNativeLanguage}
@@ -85,6 +196,17 @@ const App: React.FC = () => {
           experienceLevel={experienceLevel}
           setExperienceLevel={setExperienceLevel}
           setActiveFeature={setActiveFeature}
+          // User & Profile props
+          isLoggedIn={isLoggedIn}
+          user={user}
+          stats={userStats}
+          badges={userBadges}
+          journalEntries={journalEntries}
+          onSignIn={handleSignIn}
+          onSignOut={handleSignOut}
+          onJournalSave={handleJournalSave}
+          addXp={addXp}
+          incrementChatCount={incrementChatCount}
         />
       </main>
     </div>
