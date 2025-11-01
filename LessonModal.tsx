@@ -6,7 +6,7 @@ import { TranslationAnalysisCard } from './TranslationAnalysis';
 // --- AUDIO HELPERS ---
 function decode(base64: string) { const binaryString = atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes; }
 async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> { const dataInt16 = new Int16Array(data.buffer); const frameCount = dataInt16.length / numChannels; const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate); for (let channel = 0; channel < numChannels; channel++) { const channelData = buffer.getChannelData(channel); for (let i = 0; i < frameCount; i++) { channelData[i] = dataInt16[i * numChannels + channel] / 32768.0; } } return buffer; }
-const Spinner = () => (<svg className="animate-spin h-6 w-6 text-accent-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>);
+const Spinner = () => (<svg className="animate-spin h-6 w-6 text-accent-primary" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>);
 
 // --- LESSON CONTENT COMPONENTS ---
 
@@ -293,6 +293,107 @@ const QuizLesson: React.FC<{ lesson: Lesson, onComplete: () => void, learningLan
     );
 };
 
+type WordToken = { id: number; word: string };
+
+const SentenceScrambleLesson: React.FC<{ lesson: Lesson, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language }> = ({ lesson, onComplete, learningLanguage, nativeLanguage }) => {
+    const [data, setData] = useState<{ sentence: string, translation: string, scrambled: WordToken[] } | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [userAnswer, setUserAnswer] = useState<WordToken[]>([]);
+    const [status, setStatus] = useState<'playing' | 'correct' | 'incorrect'>('playing');
+
+    const fetchSentence = useCallback(async () => {
+        setLoading(true);
+        setStatus('playing');
+        setUserAnswer([]);
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Generate a simple, beginner-level sentence in ${learningLanguage.name} (5-7 words) for a sentence scramble exercise. Provide a JSON object with "sentence" and its "translation" in ${nativeLanguage.name}.`,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: { type: Type.OBJECT, properties: { sentence: { type: Type.STRING }, translation: { type: Type.STRING } } }
+            }
+        });
+        const { sentence, translation } = JSON.parse(response.text);
+        const words: WordToken[] = sentence.split(' ').map((word, id) => ({ id, word }));
+        const scrambled = [...words].sort(() => Math.random() - 0.5);
+        setData({ sentence, translation, scrambled });
+        setLoading(false);
+    }, [learningLanguage, nativeLanguage]);
+
+    useEffect(() => {
+        fetchSentence();
+    }, [fetchSentence]);
+
+    const handleWordClick = (token: WordToken, source: 'scrambled' | 'answer') => {
+        if (status !== 'playing') return;
+        if (source === 'scrambled') {
+            setUserAnswer([...userAnswer, token]);
+            setData(d => ({...d!, scrambled: d!.scrambled.filter(t => t.id !== token.id)}));
+        } else { // source === 'answer'
+            setUserAnswer(userAnswer.filter(t => t.id !== token.id));
+            setData(d => ({...d!, scrambled: [...d!.scrambled, token]}));
+        }
+    };
+
+    const handleCheck = () => {
+        if (userAnswer.map(t => t.word).join(' ') === data?.sentence) {
+            setStatus('correct');
+        } else {
+            setStatus('incorrect');
+        }
+    };
+    
+    if (loading) return <div className="flex justify-center items-center h-48"><Spinner /></div>;
+    if (!data) return <div>Could not load exercise.</div>;
+
+    const getStatusMessage = () => {
+        if (status === 'correct') return <p className="text-xl font-bold text-green-400">Excellent! You got it right.</p>;
+        if (status === 'incorrect') return <p className="text-xl font-bold text-red-400">Not quite. Try again!</p>;
+        return <p className="text-lg text-text-secondary">{data.translation}</p>;
+    }
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="text-center mb-6">
+                <h3 className="text-xl font-bold">Unscramble the Sentence</h3>
+                <p className="text-text-secondary">Click the words in the correct order.</p>
+            </div>
+            
+            <div className="flex-1 flex flex-col justify-between">
+                <div>
+                    <div className="min-h-[6rem] bg-background-tertiary rounded-lg p-3 flex flex-wrap gap-2 items-center justify-center border-2 border-dashed border-background-tertiary/50">
+                        {userAnswer.map((token) => (
+                            <button key={token.id} onClick={() => handleWordClick(token, 'answer')} className="bg-accent-primary text-background-primary font-semibold px-4 py-2 rounded-lg text-lg">
+                                {token.word}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="min-h-[6rem] p-3 flex flex-wrap gap-2 items-center justify-center mt-4">
+                         {data.scrambled.map((token) => (
+                            <button key={token.id} onClick={() => handleWordClick(token, 'scrambled')} className="bg-background-tertiary hover:bg-background-tertiary/70 font-semibold px-4 py-2 rounded-lg text-lg">
+                                {token.word}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="text-center h-24 flex items-center justify-center">
+                    {getStatusMessage()}
+                </div>
+
+                <div className="flex gap-4 mt-auto">
+                    {status === 'playing' ? (
+                        <button onClick={handleCheck} disabled={userAnswer.length === 0} className="w-full bg-accent-secondary text-background-primary font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 disabled:opacity-50 transition-colors">Check</button>
+                    ) : (
+                         <button onClick={status === 'correct' ? onComplete : fetchSentence} className="w-full bg-accent-primary text-background-primary font-bold py-3 px-8 rounded-lg hover:bg-accent-primary-dark transition-colors">{status === 'correct' ? 'Complete Lesson' : 'Try Another'}</button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // --- MAIN MODAL COMPONENT ---
 
@@ -321,6 +422,21 @@ const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, 
         const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Generate 8 basic colors (e.g., red, blue, green) for a learner of ${lang.name}. Provide a JSON array of objects, each with "value" (hex code string) and "name" (string).`, config: { responseMimeType: "application/json", responseSchema: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { value: { type: Type.STRING }, name: { type: Type.STRING } } } } } });
         return JSON.parse(response.text);
     }, [ai]);
+    
+    const generateNouns = useCallback(async (lang: Language) => {
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Generate 12 common, simple nouns in ${lang.name} as a JSON array of strings.`, config: { responseMimeType: "application/json", responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } } } });
+        return JSON.parse(response.text);
+    }, [ai]);
+
+    const generateVowels = useCallback(async (lang: Language) => {
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `List the main vowel letters or characters for ${lang.name} as a JSON array of strings.`, config: { responseMimeType: "application/json", responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } } } });
+        return JSON.parse(response.text);
+    }, [ai]);
+
+    const generateConsonants = useCallback(async (lang: Language) => {
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `List the main consonant letters or characters for ${lang.name} as a JSON array of strings.`, config: { responseMimeType: "application/json", responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } } } });
+        return JSON.parse(response.text);
+    }, [ai]);
 
     const renderContent = () => {
         switch (lesson.type) {
@@ -335,6 +451,14 @@ const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, 
                 return <PhrasesLesson lesson={lesson} nativeLanguage={nativeLanguage} learningLanguage={learningLanguage} />;
             case 'quiz':
                 return <QuizLesson lesson={lesson} onComplete={() => onComplete(lesson.id)} nativeLanguage={nativeLanguage} learningLanguage={learningLanguage} />;
+            case 'nouns':
+                return <GridLesson title="Common Nouns" itemType="noun" language={learningLanguage} generateItems={generateNouns} />;
+            case 'vowels':
+                return <GridLesson title="Vowels" itemType="vowel" language={learningLanguage} generateItems={generateVowels} />;
+            case 'consonants':
+                return <GridLesson title="Consonants" itemType="consonant" language={learningLanguage} generateItems={generateConsonants} />;
+            case 'sentenceScramble':
+                return <SentenceScrambleLesson lesson={lesson} onComplete={() => onComplete(lesson.id)} nativeLanguage={nativeLanguage} learningLanguage={learningLanguage} />;
             default:
                 return <div>This lesson type is not yet available.</div>;
         }
@@ -355,7 +479,7 @@ const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, 
                 <div className="flex-1 p-6 overflow-y-auto">
                     {renderContent()}
                 </div>
-                {lesson.type !== 'quiz' && (
+                {lesson.type !== 'quiz' && lesson.type !== 'sentenceScramble' && (
                     <footer className="p-4 bg-background-tertiary/30 flex-shrink-0">
                         <button onClick={() => onComplete(lesson.id)} className="w-full bg-accent-primary text-background-primary font-bold py-3 px-8 rounded-lg hover:bg-accent-primary-dark transition-colors">
                             Complete Lesson

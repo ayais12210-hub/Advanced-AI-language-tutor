@@ -15,6 +15,10 @@ const LessonIcon: React.FC<{ type: Lesson['type'] }> = ({ type }) => {
         phrases: '🗣️',
         grammar: '📝',
         quiz: '⭐',
+        nouns: '🍎',
+        vowels: '🎤',
+        consonants: '🗣️',
+        sentenceScramble: '🔄',
     };
     return <span className="text-3xl">{icons[type] || '📚'}</span>;
 };

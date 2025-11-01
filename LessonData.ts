@@ -46,4 +46,37 @@ export const lessonData: Unit[] = [
       { id: 'u3l4', title: 'Unit 3 Quiz', type: 'quiz', description: 'Test your culinary vocabulary.' },
     ],
   },
+  {
+    id: 'unit4',
+    title: 'Unit 4: Grammar Essentials',
+    description: 'Build a strong foundation with core grammar concepts.',
+    lessons: [
+      { id: 'u4l1', title: 'Common Nouns', type: 'nouns', description: 'Learn the names of everyday objects.' },
+      { id: 'u4l2', title: 'Understanding Vowels', type: 'vowels', description: 'Master the vowel sounds.' },
+      { id: 'u4l3', title: 'Mastering Consonants', type: 'consonants', description: 'Perfect your consonant pronunciation.' },
+      { id: 'u4l4', title: 'Unit 4 Quiz', type: 'quiz', description: 'Test your grammar knowledge.' },
+    ],
+  },
+  {
+    id: 'unit5',
+    title: 'Unit 5: Building Sentences',
+    description: 'Learn to construct your own sentences from scratch.',
+    lessons: [
+      { id: 'u5l1', title: 'Subject-Verb-Object', type: 'grammar', description: 'Understand basic sentence structure.' },
+      { id: 'u5l2', title: 'Sentence Scramble', type: 'sentenceScramble', description: 'Unscramble words to form correct sentences.' },
+      { id: 'u5l3', title: 'Making Negative Sentences', type: 'grammar', description: 'Learn how to negate statements.' },
+      { id: 'u5l4', title: 'Unit 5 Quiz', type: 'quiz', description: 'Practice your sentence building skills.' },
+    ],
+  },
+  {
+    id: 'unit6',
+    title: 'Unit 6: Travel & Culture',
+    description: 'Get ready for your travels and understand cultural nuances.',
+    lessons: [
+      { id: 'u6l1', title: 'At the Airport', type: 'phrases', description: 'Navigate the airport with confidence.' },
+      { id: 'u6l2', title: 'Checking into a Hotel', type: 'phrases', description: 'Handle your accommodation needs.' },
+      { id: 'u6l3', title: 'Common Idioms', type: 'phrases', description: 'Sound more like a native speaker.' },
+      { id: 'u6l4', title: 'Unit 6 Quiz', type: 'quiz', description: 'Test your travel and cultural knowledge.' },
+    ],
+  },
 ];

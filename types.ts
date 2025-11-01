@@ -78,7 +78,7 @@ export type UserInterest = 'Technology' | 'Food' | 'Art & Culture' | 'Sports' | 
 
 
 // For the Lessons feature
-export type LessonType = 'alphabet' | 'numbers' | 'colors' | 'phrases' | 'grammar' | 'quiz';
+export type LessonType = 'alphabet' | 'numbers' | 'colors' | 'phrases' | 'grammar' | 'quiz' | 'nouns' | 'vowels' | 'consonants' | 'sentenceScramble';
 
 export interface Lesson {
   id: string;
