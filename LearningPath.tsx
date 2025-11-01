@@ -8,7 +8,9 @@ const getStatus = (lessonIndex: number, completedCount: number): LessonStatus =>
 };
 
 const LessonIcon: React.FC<{ type: Lesson['type'] }> = ({ type }) => {
-    const icons: { [key in Lesson['type']]: string } = {
+    // FIX: Changed the type to make properties optional (`?`), so it doesn't require every single
+    // LessonType to be defined. This component is only for the original lessons, not the Mastery Hub.
+    const icons: { [key in Lesson['type']]?: string } = {
         alphabet: '🔤',
         numbers: '🔢',
         colors: '🎨',

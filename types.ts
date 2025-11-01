@@ -22,6 +22,7 @@ export type FeatureId =
   | 'chat'
   | 'translator'
   | 'lessons'
+  | 'learningHub' // Renamed from masteryHub
   | 'liveConvo'
   | 'tts'
   | 'imageGen'
@@ -77,9 +78,21 @@ export type UserGoal = 'Travel' | 'Career' | 'School' | 'Connect' | 'Brain Train
 export type UserInterest = 'Technology' | 'Food' | 'Art & Culture' | 'Sports' | 'Science' | 'History' | 'Movies & TV' | 'Music';
 
 
-// For the Lessons feature
-export type LessonType = 'alphabet' | 'numbers' | 'colors' | 'phrases' | 'grammar' | 'quiz' | 'nouns' | 'vowels' | 'consonants' | 'sentenceScramble';
+// Expanded LessonType for both Lessons and Mastery Hub
+export type LessonType = 
+  // Original Lesson Types
+  'alphabet' | 'numbers' | 'colors' | 'phrases' | 'grammar' | 'quiz' | 
+  'nouns' | 'vowels' | 'consonants' | 'sentenceScramble' |
 
+  // New Mastery Hub Types
+  'phonetics' | 'highFrequencyVocab' | 'essentialGrammar' | 'comprehensionCore' | 'speakingFundamentals' |
+  'extendedVocab' | 'intermediateGrammar' | 'listeningForMeaning' | 'conversationalPatterns' | 'culturalCompetence' |
+  'readingMastery' | 'writingCompetence' | 'pronunciationRefinement' | 'idiomaticMastery' | 'cognitiveFlexibility' |
+  'linguisticNuance' | 'culturalImmersion' | 'creativeExpression' | 'sociolinguisticAwareness' | 'selfIdentityIntegration' |
+  'etymology' | 'comparativeLinguistics' | 'linguisticPhilosophy' | 'languageMaintenance' | 'polyglotSystems';
+
+
+// For the original Lessons feature
 export interface Lesson {
   id: string;
   title: string;
@@ -96,6 +109,30 @@ export interface Unit {
 
 export type LessonStatus = 'locked' | 'active' | 'completed';
 
+
+// For the new Mastery Hub feature
+export interface MasteryLevel {
+  id: string;
+  tierId: number;
+  title: string;
+  description: string;
+  type: LessonType;
+  xp: number;
+}
+
+export interface MasteryTier {
+  id: number;
+  title: string;
+  description: string;
+  levels: MasteryLevel[];
+}
+
+export interface UserStats {
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  achievements: string[];
+}
 
 declare global {
   // Fix for: Subsequent property declarations must have the same type.

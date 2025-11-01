@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FeatureId, Language, ExperienceLevel, UserGoal, UserInterest } from './types';
+// FIX: Import the `languages` array to make it available in this component.
+import { languages } from './languages';
 import Sidebar from './Sidebar';
 import Chat from './Chat';
 import ImageGen from './ImageGen';
@@ -12,12 +14,13 @@ import TTS from './TTS';
 import LandingPage from './LandingPage';
 import Translator from './Translator';
 import Lessons from './Lessons';
-import { languages } from './languages';
+import LearningHub from './MasteryHub'; // Renamed component
 
 const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   chat: Chat,
   translator: Translator,
   lessons: Lessons,
+  learningHub: LearningHub, // Renamed feature
   imageGen: ImageGen,
   imageEdit: ImageEdit,
   videoGen: VideoGen,

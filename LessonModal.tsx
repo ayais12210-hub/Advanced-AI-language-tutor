@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { Lesson, Language, TranslationAnalysis } from './types';
+import { Lesson, Language, TranslationAnalysis, MasteryLevel } from './types';
 import { TranslationAnalysisCard } from './TranslationAnalysis';
 
 // --- AUDIO HELPERS ---
 function decode(base64: string) { const binaryString = atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes; }
 async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> { const dataInt16 = new Int16Array(data.buffer); const frameCount = dataInt16.length / numChannels; const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate); for (let channel = 0; channel < numChannels; channel++) { const channelData = buffer.getChannelData(channel); for (let i = 0; i < frameCount; i++) { channelData[i] = dataInt16[i * numChannels + channel] / 32768.0; } } return buffer; }
-const Spinner = () => (<svg className="animate-spin h-6 w-6 text-accent-primary" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>);
+const Spinner = () => (<svg className="animate-spin h-6 w-6 text-accent-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>);
 
 // --- LESSON CONTENT COMPONENTS ---
+
+const PlaceholderLesson: React.FC<{lesson: Lesson | MasteryLevel}> = ({ lesson }) => (
+    <div className="flex flex-col items-center justify-center h-full text-center text-text-secondary">
+        <div className="text-5xl mb-4">🚧</div>
+        <h3 className="text-2xl font-bold text-text-primary">{lesson.title}</h3>
+        <p className="mt-2">This interactive lesson is currently under construction.</p>
+        <p>Check back soon for exciting new content!</p>
+    </div>
+);
 
 // Generic component for grid-based lessons (Alphabet, Numbers, Colors)
 const GridLesson: React.FC<{ title: string, itemType: string, language: Language, generateItems: (lang: Language) => Promise<any[]> }> = ({ title, itemType, language, generateItems }) => {
@@ -78,7 +87,7 @@ const GridLesson: React.FC<{ title: string, itemType: string, language: Language
 };
 
 
-const PhrasesLesson: React.FC<{ lesson: Lesson, nativeLanguage: Language, learningLanguage: Language }> = ({ lesson, nativeLanguage, learningLanguage }) => {
+const PhrasesLesson: React.FC<{ lesson: Lesson | MasteryLevel, nativeLanguage: Language, learningLanguage: Language }> = ({ lesson, nativeLanguage, learningLanguage }) => {
     const [phrases, setPhrases] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeAnalysis, setActiveAnalysis] = useState<TranslationAnalysis | null>(null);
@@ -212,7 +221,7 @@ const PhrasesLesson: React.FC<{ lesson: Lesson, nativeLanguage: Language, learni
 };
 
 
-const QuizLesson: React.FC<{ lesson: Lesson, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language }> = ({ lesson, onComplete, learningLanguage, nativeLanguage }) => {
+const QuizLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language }> = ({ lesson, onComplete, learningLanguage, nativeLanguage }) => {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentQ, setCurrentQ] = useState(0);
@@ -295,7 +304,7 @@ const QuizLesson: React.FC<{ lesson: Lesson, onComplete: () => void, learningLan
 
 type WordToken = { id: number; word: string };
 
-const SentenceScrambleLesson: React.FC<{ lesson: Lesson, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language }> = ({ lesson, onComplete, learningLanguage, nativeLanguage }) => {
+const SentenceScrambleLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language }> = ({ lesson, onComplete, learningLanguage, nativeLanguage }) => {
     const [data, setData] = useState<{ sentence: string, translation: string, scrambled: WordToken[] } | null>(null);
     const [loading, setLoading] = useState(true);
     const [userAnswer, setUserAnswer] = useState<WordToken[]>([]);
@@ -398,7 +407,7 @@ const SentenceScrambleLesson: React.FC<{ lesson: Lesson, onComplete: () => void,
 // --- MAIN MODAL COMPONENT ---
 
 interface LessonModalProps {
-    lesson: Lesson;
+    lesson: Lesson | MasteryLevel;
     onClose: () => void;
     onComplete: (lessonId: string) => void;
     nativeLanguage: Language;
@@ -437,9 +446,15 @@ const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, 
         const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `List the main consonant letters or characters for ${lang.name} as a JSON array of strings.`, config: { responseMimeType: "application/json", responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } } } });
         return JSON.parse(response.text);
     }, [ai]);
+    
+    const generateHighFrequencyVocab = useCallback(async (lang: Language) => {
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Generate 12 high-frequency words (nouns, verbs, adjectives) in ${lang.name} as a JSON array of strings.`, config: { responseMimeType: "application/json", responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } } } });
+        return JSON.parse(response.text);
+    }, [ai]);
 
     const renderContent = () => {
         switch (lesson.type) {
+            // Original Lesson Types
             case 'alphabet':
                 return <GridLesson title="Alphabet" itemType="letter" language={learningLanguage} generateItems={generateAlphabet} />;
             case 'numbers':
@@ -459,10 +474,24 @@ const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, 
                 return <GridLesson title="Consonants" itemType="consonant" language={learningLanguage} generateItems={generateConsonants} />;
             case 'sentenceScramble':
                 return <SentenceScrambleLesson lesson={lesson} onComplete={() => onComplete(lesson.id)} nativeLanguage={nativeLanguage} learningLanguage={learningLanguage} />;
+            
+            // New Mastery Hub Types
+            case 'highFrequencyVocab':
+                return <GridLesson title="High Frequency Words" itemType="vocab" language={learningLanguage} generateItems={generateHighFrequencyVocab} />;
+            case 'conversationalPatterns':
+            case 'idiomaticMastery':
+            case 'essentialGrammar':
+            case 'intermediateGrammar':
+                return <PhrasesLesson lesson={lesson} nativeLanguage={nativeLanguage} learningLanguage={learningLanguage} />;
+            
+            // Default to placeholder for other new types
             default:
-                return <div>This lesson type is not yet available.</div>;
+                return <PlaceholderLesson lesson={lesson} />;
         }
     };
+
+    // Check if the lesson is interactive and requires a "Complete" button
+    const isInteractive = lesson.type === 'quiz' || lesson.type === 'sentenceScramble';
 
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
@@ -473,13 +502,13 @@ const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, 
                         <p className="text-sm text-text-secondary">{lesson.description}</p>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-background-tertiary transition-colors" aria-label="Close lesson">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12" /></svg>
                     </button>
                 </header>
                 <div className="flex-1 p-6 overflow-y-auto">
                     {renderContent()}
                 </div>
-                {lesson.type !== 'quiz' && lesson.type !== 'sentenceScramble' && (
+                {!isInteractive && (
                     <footer className="p-4 bg-background-tertiary/30 flex-shrink-0">
                         <button onClick={() => onComplete(lesson.id)} className="w-full bg-accent-primary text-background-primary font-bold py-3 px-8 rounded-lg hover:bg-accent-primary-dark transition-colors">
                             Complete Lesson
