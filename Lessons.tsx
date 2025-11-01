@@ -1,9 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { Language, Lesson } from './types';
+import { Language, Lesson, UserLessonStats } from './types';
 import { PageHeader } from './PageHeader';
 import LearningPath from './LearningPath';
 import LessonModal from './LessonModal';
 import { lessonData } from './LessonData';
+import LessonStats from './LessonStats';
+
+// Helper to calculate level based on total XP
+const calculateLevel = (totalXp: number) => {
+    let level = 1;
+    let requiredXp = 100;
+    let cumulativeXp = 0;
+    
+    while (totalXp >= requiredXp) {
+        totalXp -= requiredXp;
+        cumulativeXp += requiredXp;
+        level++;
+        requiredXp = Math.floor(requiredXp * 1.2); // Increase XP for next level
+    }
+    return { level, xp: totalXp, xpToNextLevel: requiredXp, totalXp: cumulativeXp + totalXp };
+};
+
 
 interface LessonsProps {
   nativeLanguage: Language;
@@ -13,34 +30,54 @@ interface LessonsProps {
 }
 
 const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage }) => {
-    // In a real app, progress would be stored per-language-pair and fetched from a backend.
-    // Here, we use local state and reset it if the learning language changes.
     const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
     const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+    const [userStats, setUserStats] = useState<UserLessonStats>({
+        level: 1,
+        xp: 0,
+        xpToNextLevel: 100,
+        streak: 1, // Assuming a default streak
+    });
     
-    // Memoize the flat list of lessons to avoid re-calculating on every render
     const allLessons = useMemo(() => lessonData.flatMap(unit => unit.lessons), []);
 
     const handleLessonClick = (lesson: Lesson) => {
         const lessonIndex = allLessons.findIndex(l => l.id === lesson.id);
         const completedCount = completedLessons.size;
         
-        // Allow clicking completed lessons or the next active lesson
         if (lessonIndex <= completedCount) {
             setActiveLesson(lesson);
         }
     };
     
     const handleCompleteLesson = (lessonId: string) => {
-        setCompletedLessons(prev => new Set(prev).add(lessonId));
+        const lesson = allLessons.find(l => l.id === lessonId);
+        if (!lesson || completedLessons.has(lessonId)) {
+            setActiveLesson(null);
+            return;
+        }
+
+        const newCompleted = new Set(completedLessons).add(lessonId);
+        setCompletedLessons(newCompleted);
+
+        // Update stats
+        const currentTotalXp = userStats.xp + (userStats.level > 1 ? allLessons.filter(l => completedLessons.has(l.id)).reduce((sum, l) => sum + l.xp, 0) : 0);
+        const newTotalXp = currentTotalXp + lesson.xp;
+        const { level, xp, xpToNextLevel } = calculateLevel(newTotalXp);
+        
+        setUserStats(prev => ({
+            ...prev,
+            level,
+            xp,
+            xpToNextLevel,
+        }));
+
         setActiveLesson(null);
     };
 
     const handleCloseModal = () => {
         setActiveLesson(null);
     };
-    
-    const progressPercentage = (completedLessons.size / allLessons.length) * 100;
     
     return (
         <div className="p-4 sm:p-8 h-full flex flex-col bg-background-primary text-text-primary">
@@ -53,16 +90,7 @@ const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, set
                 setLearningLanguage={setLearningLanguage}
             />
 
-            {/* Progress Bar */}
-            <div className="mt-6">
-                <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-text-secondary">Overall Progress</span>
-                    <span className="text-sm font-bold text-accent-secondary">{Math.round(progressPercentage)}%</span>
-                </div>
-                <div className="w-full bg-background-secondary rounded-full h-2.5 border border-background-tertiary/50">
-                    <div className="bg-gradient-to-r from-cyan-500 to-yellow-400 h-2 rounded-full" style={{ width: `${progressPercentage}%`, transition: 'width 0.5s ease-in-out' }}></div>
-                </div>
-            </div>
+            <LessonStats stats={userStats} />
 
             <div className="flex-1 overflow-y-auto mt-4">
                 <LearningPath

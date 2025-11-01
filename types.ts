@@ -98,6 +98,7 @@ export interface Lesson {
   title: string;
   type: LessonType;
   description: string;
+  xp: number; // For gamification
 }
 
 export interface Unit {
@@ -133,6 +134,15 @@ export interface UserStats {
   xpToNextLevel: number;
   achievements: string[];
 }
+
+// For gamification of the original Lessons feature
+export interface UserLessonStats {
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  streak: number;
+}
+
 
 declare global {
   // Fix for: Subsequent property declarations must have the same type.
