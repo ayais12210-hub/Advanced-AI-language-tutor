@@ -29,7 +29,9 @@ export type FeatureId =
   | 'imageEdit'
   | 'videoGen'
   | 'grounding'
-  | 'contentAnalyzer';
+  | 'contentAnalyzer'
+  | 'settings'
+  | 'help';
 
 export interface GroundingChunk {
   web?: {
@@ -102,7 +104,7 @@ export interface Lesson {
 }
 
 export interface Unit {
-  id: string;
+  id:string;
   title:string;
   description: string;
   lessons: Lesson[];

@@ -15,6 +15,8 @@ import LandingPage from './LandingPage';
 import Translator from './Translator';
 import Lessons from './Lessons';
 import LearningHub from './MasteryHub'; // Renamed component
+import Settings from './Settings';
+import Help from './Help';
 
 const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   chat: Chat,
@@ -28,6 +30,8 @@ const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   grounding: Grounding,
   contentAnalyzer: Analyzer,
   tts: TTS,
+  settings: Settings,
+  help: Help,
 };
 
 const App: React.FC = () => {
@@ -74,6 +78,9 @@ const App: React.FC = () => {
           learningLanguage={learningLanguage}
           setNativeLanguage={setNativeLanguage}
           setLearningLanguage={setLearningLanguage}
+          experienceLevel={experienceLevel}
+          setExperienceLevel={setExperienceLevel}
+          setActiveFeature={setActiveFeature}
         />
       </main>
     </div>
