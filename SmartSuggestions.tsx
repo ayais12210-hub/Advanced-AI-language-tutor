@@ -27,9 +27,13 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ generateSuggestions
         try {
             const result = await generateSuggestions();
             setSuggestions(result);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to fetch suggestions:", err);
-            setError("Couldn't get suggestions.");
+            if (err?.toString().includes('quota')) {
+                setError("API quota exceeded.");
+            } else {
+                setError("Couldn't get suggestions.");
+            }
         } finally {
             setIsLoading(false);
         }

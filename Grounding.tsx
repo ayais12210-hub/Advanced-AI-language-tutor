@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect, FormEvent, useCallback } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
@@ -111,9 +109,13 @@ const Grounding: React.FC<GroundingProps> = ({ learningLanguage, nativeLanguage,
 
             const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
             setMessages(prev => [...prev, { text: response.text, isUser: false, sources }]);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            const errorMessage = 'Sorry, I encountered an error. Please try again.';
+            let errorMessage = 'Sorry, I encountered an error. Please try again.';
+            if (err?.toString().includes('quota')) {
+                errorMessage = "API quota exceeded. It looks like you've hit your usage limit for today. Please check your plan or try again tomorrow.";
+            }
+
             setError(errorMessage);
             setMessages(prev => [...prev, { text: errorMessage, isUser: false }]);
         } finally {
@@ -126,7 +128,6 @@ const Grounding: React.FC<GroundingProps> = ({ learningLanguage, nativeLanguage,
         sources.forEach(chunk => {
             if (chunk.web?.uri) uniqueLinks.set(chunk.web.uri, chunk.web.title || chunk.web.uri);
             if (chunk.maps?.uri) uniqueLinks.set(chunk.maps.uri, chunk.maps.title || chunk.maps.uri);
-            // FIX: Extract and display review snippet links from grounding metadata.
             if (chunk.maps?.placeAnswerSources?.reviewSnippets) {
                 chunk.maps.placeAnswerSources.reviewSnippets.forEach(snippet => {
                     if (snippet.uri) {

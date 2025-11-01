@@ -118,8 +118,6 @@ const ImageEdit: React.FC<ImageEditProps> = ({ nativeLanguage, learningLanguage,
                 },
             });
 
-            // FIX: Per Gemini API guidelines, iterate through parts to find the image data
-            // as the response may contain other parts.
             let foundImage = false;
             const candidate = response.candidates?.[0];
             if (candidate) {
@@ -140,7 +138,11 @@ const ImageEdit: React.FC<ImageEditProps> = ({ nativeLanguage, learningLanguage,
 
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'Failed to edit image. Please try a different prompt or image.');
+            if (err?.toString().includes('quota')) {
+                setError('API quota exceeded. Please check your plan or try again later.');
+            } else {
+                setError(err.message || 'Failed to edit image. Please try a different prompt or image.');
+            }
         } finally {
             setIsLoading(false);
         }

@@ -88,9 +88,13 @@ const ImageGen: React.FC<ImageGenProps> = ({ nativeLanguage, learningLanguage, s
       const imageUrl = `data:image/jpeg;base64,${base64ImageBytes}`;
       setGeneratedImage(imageUrl);
 
-    } catch (err) {
+    } catch (err: any) {
         console.error(err);
-        setError('Failed to generate image. Please try a different prompt.');
+        if (err?.toString().includes('quota')) {
+            setError('API quota exceeded. Please check your plan or try again later.');
+        } else {
+            setError('Failed to generate image. Please try a different prompt.');
+        }
     } finally {
         setIsLoading(false);
     }

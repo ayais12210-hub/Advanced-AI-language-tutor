@@ -23,17 +23,25 @@ const PlaceholderLesson: React.FC<{lesson: Lesson | MasteryLevel}> = ({ lesson }
 const GridLesson: React.FC<{ title: string, itemType: string, language: Language, generateItems: (lang: Language) => Promise<any[]> }> = ({ title, itemType, language, generateItems }) => {
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string|null>(null);
     const [ttsLoading, setTtsLoading] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchItems = async () => {
             setLoading(true);
-            const generated = await generateItems(language);
-            setItems(generated);
-            setLoading(false);
+            setError(null);
+            try {
+                const generated = await generateItems(language);
+                setItems(generated);
+            } catch (err: any) {
+                console.error(`Failed to fetch grid items for ${title}`, err);
+                setError(err.toString().includes('quota') ? 'API quota exceeded.' : 'Could not load lesson content.');
+            } finally {
+                setLoading(false);
+            }
         };
         fetchItems();
-    }, [language, generateItems]);
+    }, [language, generateItems, title]);
 
     const playSound = async (text: string) => {
         setTtsLoading(text);
@@ -55,14 +63,18 @@ const GridLesson: React.FC<{ title: string, itemType: string, language: Language
             source.buffer = audioBuffer;
             source.connect(outputAudioContext.destination);
             source.start();
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to play TTS for "${text}"`, error);
+            if (error.toString().includes('quota')) {
+              alert('Could not play audio: API quota exceeded.');
+            }
         } finally {
             setTtsLoading(null);
         }
     };
 
     if (loading) return <div className="flex justify-center items-center h-48"><Spinner /></div>;
+    if (error) return <div className="flex justify-center items-center h-48 text-red-400">{error}</div>;
 
     return (
         <div>
@@ -89,6 +101,7 @@ const GridLesson: React.FC<{ title: string, itemType: string, language: Language
 
 const PhrasesLesson: React.FC<{ lesson: Lesson | MasteryLevel, nativeLanguage: Language, learningLanguage: Language }> = ({ lesson, nativeLanguage, learningLanguage }) => {
     const [phrases, setPhrases] = useState<any[]>([]);
+    const [error, setError] = useState<string|null>(null);
     const [loading, setLoading] = useState(true);
     const [activeAnalysis, setActiveAnalysis] = useState<TranslationAnalysis | null>(null);
     const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -97,29 +110,36 @@ const PhrasesLesson: React.FC<{ lesson: Lesson | MasteryLevel, nativeLanguage: L
     useEffect(() => {
         const fetchPhrases = async () => {
             setLoading(true);
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: `Generate a JSON array of 5 common phrases related to "${lesson.title}" for someone learning ${learningLanguage.name}. Each object should have a "phrase" in ${learningLanguage.name} and a "translation" in ${nativeLanguage.name}.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                phrase: { type: Type.STRING },
-                                translation: { type: Type.STRING }
+            setError(null);
+            try {
+                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: `Generate a JSON array of 5 common phrases related to "${lesson.title}" for someone learning ${learningLanguage.name}. Each object should have a "phrase" in ${learningLanguage.name} and a "translation" in ${nativeLanguage.name}.`,
+                    config: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    phrase: { type: Type.STRING },
+                                    translation: { type: Type.STRING }
+                                }
                             }
                         }
                     }
-                }
-            });
-            setPhrases(JSON.parse(response.text));
-            setLoading(false);
+                });
+                setPhrases(JSON.parse(response.text));
+            } catch (err: any) {
+                console.error('Failed to fetch phrases:', err);
+                setError(err.toString().includes('quota') ? 'API quota exceeded.' : 'Could not load lesson content.');
+            } finally {
+                setLoading(false);
+            }
         };
         fetchPhrases();
-    }, [lesson.title, learningLanguage, nativeLanguage]);
+    }, [lesson.title, learningLanguage.name, nativeLanguage.name]);
 
     const handleDeepDive = async (phrase: string) => {
         setAnalysisLoading(true);
@@ -156,8 +176,13 @@ const PhrasesLesson: React.FC<{ lesson: Lesson | MasteryLevel, nativeLanguage: L
             // But the model might get confused and translate the other way. Let's fix that here.
             result.professionalTranslation = phrases.find(p => p.phrase === phrase)?.translation || result.professionalTranslation;
             setActiveAnalysis(result);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Deep dive analysis failed:", err);
+             if (err.toString().includes('quota')) {
+                alert('Could not get deep dive: API quota exceeded.');
+            } else {
+                alert('Deep dive analysis failed.');
+            }
         } finally {
             setAnalysisLoading(false);
         }
@@ -185,12 +210,18 @@ const PhrasesLesson: React.FC<{ lesson: Lesson | MasteryLevel, nativeLanguage: L
             source.buffer = audioBuffer;
             source.connect(outputAudioContext.destination);
             source.start();
-        } catch(e) { console.error(e); } finally {
+        } catch(e: any) {
+            console.error(e);
+            if (e.toString().includes('quota')) {
+                alert('Could not play audio: API quota exceeded.');
+            }
+        } finally {
             setIsTtsLoading(false);
         }
     };
 
     if (loading) return <div className="flex justify-center items-center h-48"><Spinner /></div>;
+    if (error) return <div className="flex justify-center items-center h-48 text-red-400">{error}</div>;
 
     if (activeAnalysis || analysisLoading) {
         return (
@@ -223,6 +254,7 @@ const PhrasesLesson: React.FC<{ lesson: Lesson | MasteryLevel, nativeLanguage: L
 
 const QuizLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language }> = ({ lesson, onComplete, learningLanguage, nativeLanguage }) => {
     const [questions, setQuestions] = useState<any[]>([]);
+    const [error, setError] = useState<string|null>(null);
     const [loading, setLoading] = useState(true);
     const [currentQ, setCurrentQ] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -231,21 +263,28 @@ const QuizLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => vo
     useEffect(() => {
         const generateQuiz = async () => {
             setLoading(true);
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            // For a real quiz, we'd want to make this prompt more robust, maybe based on previous lessons
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: `Generate a 4-question multiple choice quiz about basic ${learningLanguage.name} vocabulary (greetings, numbers). Provide a JSON array where each object has "question" (in ${nativeLanguage.name}), "options" (an array of 4 strings in ${learningLanguage.name}), and "answer" (the correct string from options).`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { question: { type: Type.STRING }, options: { type: Type.ARRAY, items: { type: Type.STRING } }, answer: { type: Type.STRING } } } }
-                }
-            });
-            setQuestions(JSON.parse(response.text));
-            setLoading(false);
+            setError(null);
+            try {
+                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+                // For a real quiz, we'd want to make this prompt more robust, maybe based on previous lessons
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: `Generate a 4-question multiple choice quiz about basic ${learningLanguage.name} vocabulary (greetings, numbers). Provide a JSON array where each object has "question" (in ${nativeLanguage.name}), "options" (an array of 4 strings in ${learningLanguage.name}), and "answer" (the correct string from options).`,
+                    config: {
+                        responseMimeType: "application/json",
+                        responseSchema: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { question: { type: Type.STRING }, options: { type: Type.ARRAY, items: { type: Type.STRING } }, answer: { type: Type.STRING } } } }
+                    }
+                });
+                setQuestions(JSON.parse(response.text));
+            } catch(err: any) {
+                 console.error('Failed to generate quiz:', err);
+                setError(err.toString().includes('quota') ? 'API quota exceeded.' : 'Could not load quiz.');
+            } finally {
+                setLoading(false);
+            }
         };
         generateQuiz();
-    }, [learningLanguage, nativeLanguage]);
+    }, [learningLanguage.name, nativeLanguage.name]);
 
     const handleAnswer = (option: string) => {
         if (selectedAnswer) return;
@@ -264,6 +303,7 @@ const QuizLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => vo
     };
 
     if (loading) return <div className="flex justify-center items-center h-48"><Spinner /></div>;
+    if (error) return <div className="flex justify-center items-center h-48 text-red-400">{error}</div>;
     if (questions.length === 0) return <div>Could not load quiz.</div>
 
     const question = questions[currentQ];
@@ -306,28 +346,36 @@ type WordToken = { id: number; word: string };
 
 const SentenceScrambleLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language }> = ({ lesson, onComplete, learningLanguage, nativeLanguage }) => {
     const [data, setData] = useState<{ sentence: string, translation: string, scrambled: WordToken[] } | null>(null);
+    const [error, setError] = useState<string|null>(null);
     const [loading, setLoading] = useState(true);
     const [userAnswer, setUserAnswer] = useState<WordToken[]>([]);
     const [status, setStatus] = useState<'playing' | 'correct' | 'incorrect'>('playing');
 
     const fetchSentence = useCallback(async () => {
         setLoading(true);
+        setError(null);
         setStatus('playing');
         setUserAnswer([]);
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Generate a simple, beginner-level sentence in ${learningLanguage.name} (5-7 words) for a sentence scramble exercise. Provide a JSON object with "sentence" and its "translation" in ${nativeLanguage.name}.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: { type: Type.OBJECT, properties: { sentence: { type: Type.STRING }, translation: { type: Type.STRING } } }
-            }
-        });
-        const { sentence, translation } = JSON.parse(response.text);
-        const words: WordToken[] = sentence.split(' ').map((word, id) => ({ id, word }));
-        const scrambled = [...words].sort(() => Math.random() - 0.5);
-        setData({ sentence, translation, scrambled });
-        setLoading(false);
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: `Generate a simple, beginner-level sentence in ${learningLanguage.name} (5-7 words) for a sentence scramble exercise. Provide a JSON object with "sentence" and its "translation" in ${nativeLanguage.name}.`,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: { type: Type.OBJECT, properties: { sentence: { type: Type.STRING }, translation: { type: Type.STRING } } }
+                }
+            });
+            const { sentence, translation } = JSON.parse(response.text);
+            const words: WordToken[] = sentence.split(' ').map((word, id) => ({ id, word }));
+            const scrambled = [...words].sort(() => Math.random() - 0.5);
+            setData({ sentence, translation, scrambled });
+        } catch (err: any) {
+            console.error('Failed to fetch sentence:', err);
+            setError(err.toString().includes('quota') ? 'API quota exceeded.' : 'Could not load exercise.');
+        } finally {
+            setLoading(false);
+        }
     }, [learningLanguage, nativeLanguage]);
 
     useEffect(() => {
@@ -354,6 +402,7 @@ const SentenceScrambleLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComple
     };
     
     if (loading) return <div className="flex justify-center items-center h-48"><Spinner /></div>;
+    if (error) return <div className="flex justify-center items-center h-48 text-red-400">{error}</div>;
     if (!data) return <div>Could not load exercise.</div>;
 
     const getStatusMessage = () => {

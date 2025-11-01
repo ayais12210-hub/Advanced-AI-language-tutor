@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, FormEvent, useCallback } from 'react';
 import { GoogleGenAI, Chat as GeminiChat, Type, Modality } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
-import { ChatMessage, Language, TutorStyle, ConversationMode, GroundingChunk } from './types';
+import { ChatMessage, Language, TutorStyle, ModelId, GroundingChunk, SubscriptionTier, FeatureId, TtsProvider } from './types';
 import SmartSuggestions from './SmartSuggestions';
 import { PageHeader } from './PageHeader';
 import { ChatSettings } from './TutorStyleSelector';
 
 // --- ICONS ---
 const Spinner = () => ( <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"> <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle> <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path> </svg> );
-const SettingsIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"> <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.113-1.113l.448-.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113-1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113M12 21.75a9.75 9.75 0 100-19.5 9.75 9.75 0 000 19.5z" /> <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" /> </svg> );
+const SettingsIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"> <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.113-1.113l.448-.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113-1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113M12 21.75a9.75 9.75 0 100-19.5 9.75 9.75 0 000 19.5z" /> <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" /> </svg> );
 
 // --- AUDIO HELPERS ---
 function decode(base64: string) { const binaryString = atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes; }
@@ -51,18 +51,21 @@ interface ChatProps {
   setNativeLanguage: (language: Language) => void;
   setLearningLanguage: (language: Language) => void;
   incrementChatCount: () => void;
+  subscriptionTier: SubscriptionTier;
+  setActiveFeature: (feature: FeatureId) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, incrementChatCount }) => {
+const Chat: React.FC<ChatProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, incrementChatCount, subscriptionTier, setActiveFeature }) => {
   const [userInput, setUserInput] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [tutorStyle, setTutorStyle] = useState<TutorStyle>('Standard');
-  const [conversationMode, setConversationMode] = useState<ConversationMode>('Smart');
+  const [selectedModel, setSelectedModel] = useState<ModelId>('auto');
   const [isGrounded, setIsGrounded] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [ttsProvider, setTtsProvider] = useState<TtsProvider>('Gemini');
 
   const [ttsLoadingMessageId, setTtsLoadingMessageId] = useState<string | null>(null);
   const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
@@ -78,7 +81,7 @@ const Chat: React.FC<ChatProps> = ({ nativeLanguage, learningLanguage, setNative
   useEffect(() => {
     chatRef.current = null;
     setChatHistory([]);
-  }, [nativeLanguage, learningLanguage, tutorStyle, conversationMode, isGrounded]);
+  }, [nativeLanguage, learningLanguage, tutorStyle, selectedModel, isGrounded]);
 
   useEffect(() => {
     return () => {
@@ -126,13 +129,46 @@ Generate 3 natural, engaging, and contextually relevant follow-up questions or r
       try {
           const suggestions = JSON.parse(response.text);
           return Array.isArray(suggestions) ? suggestions.map(String) : [];
-      } catch (e) {
+      } catch (e: any) {
           console.error("Failed to parse suggestions JSON:", e);
+          if (e?.toString().includes('quota')) {
+            // This error will be caught by SmartSuggestions component's try/catch
+            throw new Error("API quota exceeded.");
+          }
           return [];
       }
   }, [learningLanguage, chatHistory]);
 
   const handleSuggestionClick = (suggestion: string) => { setUserInput(suggestion); };
+  
+  const getModelName = (modelId: ModelId): string => {
+    switch (modelId) {
+        case 'auto':
+        case 'gemini-2.5-pro':
+        case 'gpt-5': // Simulating GPT-5 with Gemini's best
+        case 'claude-opus-4.1': // Simulating Opus with Gemini's best
+        case 'claude-opus-4':
+        case 'claude-opus-3':
+            return 'gemini-2.5-pro';
+        
+        case 'gemini-2.5-flash':
+        case 'gpt-4o': // Simulating with a fast, capable model
+        case 'gpt-4.1':
+        case 'o3':
+        case 'o4-mini':
+        case 'claude-sonnet-4.5':
+        case 'claude-sonnet-4':
+        case 'claude-sonnet-3.7':
+            return 'gemini-2.5-flash';
+
+        case 'claude-haiku-4.5': // Simulating Haiku with the fastest model
+        case 'claude-haiku-3.5':
+            return 'gemini-flash-lite-latest';
+            
+        default:
+            return 'gemini-2.5-flash'; // Safe default
+    }
+  };
 
   const handleSendMessage = async (e?: FormEvent<HTMLFormElement>, messageOverride?: string) => {
     if (e) e.preventDefault();
@@ -154,26 +190,17 @@ Generate 3 natural, engaging, and contextually relevant follow-up questions or r
       if (!chatRef.current) {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
-        let modelName = 'gemini-2.5-flash';
+        const modelName = getModelName(selectedModel);
         const config: any = {
             systemInstruction: getSystemInstruction(nativeLanguage, learningLanguage, tutorStyle, isGrounded),
         };
 
-        switch (conversationMode) {
-            case 'Fast':
-                modelName = 'gemini-2.5-flash-lite';
-                break;
-            case 'Genius':
-                modelName = 'gemini-2.5-pro';
-                config.thinkingConfig = { thinkingBudget: 32768 };
-                break;
-            case 'Smart':
-            default:
-                modelName = 'gemini-2.5-flash';
-                break;
+        const proModels: ModelId[] = ['gemini-2.5-pro', 'gpt-5', 'claude-opus-4.1', 'claude-opus-4', 'claude-opus-3', 'auto'];
+        if (proModels.includes(selectedModel)) {
+            config.thinkingConfig = { thinkingBudget: 32768 };
         }
 
-        if (isGrounded && conversationMode !== 'Fast') {
+        if (isGrounded && modelName !== 'gemini-flash-lite-latest') {
             config.tools = [{ googleSearch: {} }];
         }
 
@@ -208,11 +235,14 @@ Generate 3 natural, engaging, and contextually relevant follow-up questions or r
         });
       }
 
-    } catch (err) {
-      const errorMessage = 'Sorry, something went wrong. Please try again.';
+    } catch (err: any) {
+      console.error(err);
+      let errorMessage = 'Sorry, something went wrong. Please try again.';
+      if (err?.toString().includes('quota')) {
+        errorMessage = "API quota exceeded. It looks like you've hit your usage limit for today. Please check your plan or try again tomorrow.";
+      }
       setError(errorMessage);
        setChatHistory(prev => [...prev, { id: `error-${Date.now()}`, role: 'model', parts: [{ text: errorMessage }] }]);
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -236,12 +266,15 @@ Generate 3 natural, engaging, and contextually relevant follow-up questions or r
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
         // Extract only the part in the learning language for TTS
         const conversationalPart = text.split('---')[0].trim();
+        // Simulate different providers with different voices for variety
+        const voiceName = ttsProvider === 'ElevenLabs' ? 'Zephyr' : 'Kore';
+
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash-preview-tts",
             contents: [{ parts: [{ text: conversationalPart }] }],
             config: {
                 responseModalities: [Modality.AUDIO],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
             },
         });
 
@@ -257,9 +290,13 @@ Generate 3 natural, engaging, and contextually relevant follow-up questions or r
         source.start();
         setAudioSource(source);
 
-    } catch (err) {
+    } catch (err: any) {
         console.error(err);
-        setError('Failed to generate speech.');
+        if (err?.toString().includes('quota')) {
+            setError('Could not generate speech: API quota exceeded.');
+        } else {
+            setError('Failed to generate speech.');
+        }
     } finally {
         setTtsLoadingMessageId(null);
     }
@@ -328,15 +365,16 @@ Generate 3 natural, engaging, and contextually relevant follow-up questions or r
                     onClose={() => setIsSettingsOpen(false)}
                     currentStyle={tutorStyle}
                     onStyleChange={setTutorStyle}
-                    currentMode={conversationMode}
-                    onModeChange={setConversationMode}
+                    currentModel={selectedModel}
+                    onModelChange={setSelectedModel}
                     isGrounded={isGrounded}
                     onGroundedChange={setIsGrounded}
+                    ttsProvider={ttsProvider}
+                    onTtsProviderChange={setTtsProvider}
+                    subscriptionTier={subscriptionTier}
+                    setActiveFeature={setActiveFeature}
                 />
               </div>
-              <div className="text-xs bg-background-tertiary px-2 py-1 rounded-full text-text-secondary capitalize">{conversationMode}</div>
-
-
             <div className="flex-1 flex flex-col gap-2">
                 <textarea
                   value={userInput}

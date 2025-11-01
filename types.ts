@@ -15,8 +15,22 @@ export interface ChatMessage {
 }
 
 export type TutorStyle = 'Standard' | 'Patient' | 'Concise';
-export type ConversationMode = 'Fast' | 'Smart' | 'Genius';
+export type TtsProvider = 'Gemini' | 'ElevenLabs';
+export type SttProvider = 'Gemini' | 'Whisper' | 'Deepgram';
+export type ThinkingPreset = 'auto' | 'instant' | 'mini' | 'thinking';
 
+export type ModelProvider = 'Auto' | 'Google' | 'OpenAI' | 'Anthropic';
+export type ModelId = 
+  // Auto
+  | 'auto'
+  // Google
+  | 'gemini-2.5-pro' | 'gemini-2.5-flash'
+  // OpenAI (simulated)
+  | 'gpt-5' | 'gpt-4o' | 'gpt-4.1' | 'o3' | 'o4-mini'
+  // Anthropic (simulated)
+  | 'claude-opus-4.1' | 'claude-sonnet-4.5' | 'claude-haiku-4.5' | 'claude-opus-4' | 'claude-sonnet-4' | 'claude-sonnet-3.7' | 'claude-opus-3' | 'claude-haiku-3.5';
+
+export type SubscriptionTier = 'Free' | 'Plus' | 'Pro' | 'Infinite';
 
 export type FeatureId = 
   | 'chat'
@@ -33,7 +47,8 @@ export type FeatureId =
   | 'settings'
   | 'help'
   | 'privacyPolicy'
-  | 'profile';
+  | 'profile'
+  | 'premium';
 
 export interface GroundingChunk {
   web?: {
@@ -43,9 +58,7 @@ export interface GroundingChunk {
   maps?: {
     uri?: string;
     title?: string;
-    // FIX: Changed placeAnswerSources from an array of objects to a single object to match SDK type.
     placeAnswerSources?: {
-        // FIX: Made uri and title optional to match the SDK type where they might be missing.
         reviewSnippets?: {
             uri?: string;
             title?: string;

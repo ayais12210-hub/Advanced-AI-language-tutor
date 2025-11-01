@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { TranslationAnalysis } from './types';
+import { TranslationAnalysis, TtsProvider } from './types';
 
 // Icons for different analysis sections
 const SoundIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28 .53v15.88a.75.75 0 01-1.28 .53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>;
@@ -18,6 +18,8 @@ interface TranslationAnalysisCardProps {
     analysis: TranslationAnalysis;
     onPlayAudio: () => void;
     isTtsLoading: boolean;
+    ttsProvider: TtsProvider;
+    onTtsProviderChange: (provider: TtsProvider) => void;
 }
 
 const AnalysisSection: React.FC<{ icon: React.ReactElement, title: string, children: React.ReactNode }> = ({ icon, title, children }) => (
@@ -30,7 +32,7 @@ const AnalysisSection: React.FC<{ icon: React.ReactElement, title: string, child
     </div>
 );
 
-export const TranslationAnalysisCard: React.FC<TranslationAnalysisCardProps> = ({ analysis, onPlayAudio, isTtsLoading }) => {
+export const TranslationAnalysisCard: React.FC<TranslationAnalysisCardProps> = ({ analysis, onPlayAudio, isTtsLoading, ttsProvider, onTtsProviderChange }) => {
     return (
         <div className="h-full space-y-4">
             {/* Main Translation */}
@@ -44,9 +46,19 @@ export const TranslationAnalysisCard: React.FC<TranslationAnalysisCardProps> = (
                 </div>
                 <div className="flex justify-between items-start gap-2">
                     <p className="text-lg text-text-primary">{analysis.professionalTranslation}</p>
-                    <button onClick={onPlayAudio} disabled={isTtsLoading} className="p-2 rounded-full text-text-secondary hover:bg-accent-primary hover:text-background-primary disabled:opacity-50 disabled:cursor-wait transition-all">
-                        {isTtsLoading ? <TtsSpinner /> : <SpeakerIcon />}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={ttsProvider}
+                            onChange={(e) => onTtsProviderChange(e.target.value as TtsProvider)}
+                            className="bg-background-tertiary/50 border border-background-tertiary text-text-secondary text-xs rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                        >
+                            <option value="Gemini">Gemini</option>
+                            <option value="ElevenLabs">ElevenLabs</option>
+                        </select>
+                        <button onClick={onPlayAudio} disabled={isTtsLoading} className="p-2 rounded-full text-text-secondary hover:bg-accent-primary hover:text-background-primary disabled:opacity-50 disabled:cursor-wait transition-all">
+                            {isTtsLoading ? <TtsSpinner /> : <SpeakerIcon />}
+                        </button>
+                    </div>
                 </div>
             </div>
 

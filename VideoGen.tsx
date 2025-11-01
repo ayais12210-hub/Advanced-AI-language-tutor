@@ -1,11 +1,9 @@
-
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-// FIX: Import the correct `GenerateVideosOperation` type and remove unused/incorrect ones.
 import { GoogleGenAI, Type, GenerateVideosOperation } from "@google/genai";
-import { VideoAspectRatio, Language } from './types';
+import { VideoAspectRatio, Language, SubscriptionTier, FeatureId } from './types';
 import SmartSuggestions from './SmartSuggestions';
 import { PageHeader } from './PageHeader';
+import LockedFeatureGate from './LockedFeatureGate';
 
 const aspectRatios: { id: VideoAspectRatio, name:string }[] = [
   { id: '16:9', name: 'Landscape' },
@@ -50,9 +48,11 @@ interface VideoGenProps {
   learningLanguage: Language;
   setNativeLanguage: (language: Language) => void;
   setLearningLanguage: (language: Language) => void;
+  subscriptionTier: SubscriptionTier;
+  setActiveFeature: (feature: FeatureId) => void;
 }
 
-const VideoGen: React.FC<VideoGenProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage }) => {
+const VideoGen: React.FC<VideoGenProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, subscriptionTier, setActiveFeature }) => {
     const [apiKeySelected, setApiKeySelected] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -163,7 +163,6 @@ const VideoGen: React.FC<VideoGenProps> = ({ nativeLanguage, learningLanguage, s
         setGeneratedVideoUrl(null);
         setLoadingMessage(loadingMessages[0]);
 
-        // FIX: Use the specific `GenerateVideosOperation` type instead of the generic `Operation` type.
         let operation: GenerateVideosOperation;
 
         try {
@@ -206,7 +205,9 @@ const VideoGen: React.FC<VideoGenProps> = ({ nativeLanguage, learningLanguage, s
         } catch (err: any) {
             console.error(err);
             const errorMessage = err.message || 'An unknown error occurred during video generation.';
-            if (errorMessage.includes("Requested entity was not found.")) {
+            if (err?.toString().includes('quota')) {
+                setError('API quota exceeded. Please check your plan, billing details, or try again later.');
+            } else if (errorMessage.includes("Requested entity was not found.")) {
                 setError("API Key is invalid. Please select a valid key.");
                 setApiKeySelected(false);
             } else {
@@ -239,88 +240,95 @@ const VideoGen: React.FC<VideoGenProps> = ({ nativeLanguage, learningLanguage, s
     }
 
     return (
-        <div className="p-4 sm:p-8 h-full flex flex-col bg-background-primary text-text-primary">
-            <PageHeader
-                title="Immersive Scenarios"
-                description="Upload an image, describe a scene, and let Veo create a video."
-                nativeLanguage={nativeLanguage}
-                learningLanguage={learningLanguage}
-                setNativeLanguage={setNativeLanguage}
-                setLearningLanguage={setLearningLanguage}
-            />
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
-                {/* Controls Panel */}
-                <div className="flex flex-col gap-6 bg-background-secondary/50 p-6 rounded-lg border border-background-tertiary/50">
-                     <div 
-                        onClick={() => !isLoading && fileInputRef.current?.click()}
-                        className={`flex-1 bg-background-secondary h-64 rounded-lg border-2 border-dashed border-background-tertiary flex items-center justify-center transition-colors ${!isLoading ? 'cursor-pointer hover:border-accent-primary' : ''}`}
-                    >
-                        {imagePreview ? (
-                            <img src={imagePreview} alt="Uploaded preview" className="max-w-full max-h-full object-contain rounded-md p-2" />
+        <LockedFeatureGate
+            featureName="Immersive Scenarios"
+            requiredTier="Pro"
+            currentTier={subscriptionTier}
+            setActiveFeature={setActiveFeature}
+        >
+            <div className="p-4 sm:p-8 h-full flex flex-col bg-background-primary text-text-primary">
+                <PageHeader
+                    title="Immersive Scenarios"
+                    description="Upload an image, describe a scene, and let Veo create a video."
+                    nativeLanguage={nativeLanguage}
+                    learningLanguage={learningLanguage}
+                    setNativeLanguage={setNativeLanguage}
+                    setLearningLanguage={setLearningLanguage}
+                />
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+                    {/* Controls Panel */}
+                    <div className="flex flex-col gap-6 bg-background-secondary/50 p-6 rounded-lg border border-background-tertiary/50">
+                        <div 
+                            onClick={() => !isLoading && fileInputRef.current?.click()}
+                            className={`flex-1 bg-background-secondary h-64 rounded-lg border-2 border-dashed border-background-tertiary flex items-center justify-center transition-colors ${!isLoading ? 'cursor-pointer hover:border-accent-primary' : ''}`}
+                        >
+                            {imagePreview ? (
+                                <img src={imagePreview} alt="Uploaded preview" className="max-w-full max-h-full object-contain rounded-md p-2" />
+                            ) : (
+                                <div className="text-center text-text-secondary/70 p-4">
+                                    <UploadIcon />
+                                    <p className="mt-2 font-semibold">Click to upload starting image</p>
+                                    <p className="text-sm">PNG, JPG, WEBP</p>
+                                </div>
+                            )}
+                        </div>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="hidden" disabled={isLoading}/>
+                        
+                        <div className="flex flex-col gap-2">
+                            <textarea
+                                rows={3}
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="e.g., A neon hologram of a cat driving at top speed"
+                                className="w-full bg-background-tertiary rounded-lg p-3 text-text-primary placeholder-text-secondary/70 focus:ring-2 focus:ring-accent-primary focus:outline-none resize-none"
+                                disabled={isLoading || !imageFile}
+                            />
+                            <SmartSuggestions
+                                generateSuggestions={generateVideoSuggestions}
+                                onSuggestionClick={handleSuggestionClick}
+                                isDisabled={isLoading || !imageFile}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <label className="text-sm font-medium text-text-secondary">Aspect Ratio:</label>
+                            <div className="flex gap-3">
+                                {aspectRatios.map(({ id, name }) => (
+                                    <button key={id} onClick={() => setSelectedAspectRatio(id)} disabled={isLoading}
+                                        className={`py-2 px-4 text-sm rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background-secondary focus:ring-accent-primary ${selectedAspectRatio === id ? 'bg-accent-primary text-background-primary font-semibold' : 'bg-background-tertiary hover:bg-background-tertiary/50'}`}>
+                                        {name} ({id})
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                
+                        <button onClick={handleGenerate} disabled={isLoading || !prompt.trim() || !imageFile}
+                            className="w-full bg-accent-primary text-background-primary font-bold py-3 px-5 rounded-lg hover:bg-accent-primary-dark disabled:bg-background-tertiary disabled:text-text-secondary/50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center text-lg mt-auto">
+                            {isLoading ? 'Generating Video...' : 'Generate Video'}
+                        </button>
+                    </div>
+
+                    {/* Video Display Area */}
+                    <div className="bg-background-secondary/50 rounded-lg border border-background-tertiary/50 flex items-center justify-center p-6">
+                        {isLoading ? (
+                            <Spinner message={loadingMessage} />
+                        ) : error ? (
+                            <div className="text-center text-red-400 p-4">
+                                <p className="font-semibold">Generation Failed</p>
+                                <p>{error}</p>
+                            </div>
+                        ) : generatedVideoUrl ? (
+                            <video src={generatedVideoUrl} controls autoPlay loop className="max-w-full max-h-full rounded-md shadow-lg" />
                         ) : (
-                            <div className="text-center text-text-secondary/70 p-4">
-                                <UploadIcon />
-                                <p className="mt-2 font-semibold">Click to upload starting image</p>
-                                <p className="text-sm">PNG, JPG, WEBP</p>
+                            <div className="text-center text-text-secondary">
+                                <VideoPlaceholder />
+                                <p className="mt-4">Your generated video will appear here</p>
                             </div>
                         )}
                     </div>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="hidden" disabled={isLoading}/>
-                    
-                    <div className="flex flex-col gap-2">
-                        <textarea
-                            rows={3}
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="e.g., A neon hologram of a cat driving at top speed"
-                            className="w-full bg-background-tertiary rounded-lg p-3 text-text-primary placeholder-text-secondary/70 focus:ring-2 focus:ring-accent-primary focus:outline-none resize-none"
-                            disabled={isLoading || !imageFile}
-                        />
-                         <SmartSuggestions
-                            generateSuggestions={generateVideoSuggestions}
-                            onSuggestionClick={handleSuggestionClick}
-                            isDisabled={isLoading || !imageFile}
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <label className="text-sm font-medium text-text-secondary">Aspect Ratio:</label>
-                        <div className="flex gap-3">
-                            {aspectRatios.map(({ id, name }) => (
-                                <button key={id} onClick={() => setSelectedAspectRatio(id)} disabled={isLoading}
-                                    className={`py-2 px-4 text-sm rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background-secondary focus:ring-accent-primary ${selectedAspectRatio === id ? 'bg-accent-primary text-background-primary font-semibold' : 'bg-background-tertiary hover:bg-background-tertiary/50'}`}>
-                                    {name} ({id})
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-            
-                    <button onClick={handleGenerate} disabled={isLoading || !prompt.trim() || !imageFile}
-                        className="w-full bg-accent-primary text-background-primary font-bold py-3 px-5 rounded-lg hover:bg-accent-primary-dark disabled:bg-background-tertiary disabled:text-text-secondary/50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center text-lg mt-auto">
-                        {isLoading ? 'Generating Video...' : 'Generate Video'}
-                    </button>
-                </div>
-
-                {/* Video Display Area */}
-                <div className="bg-background-secondary/50 rounded-lg border border-background-tertiary/50 flex items-center justify-center p-6">
-                    {isLoading ? (
-                        <Spinner message={loadingMessage} />
-                    ) : error ? (
-                        <div className="text-center text-red-400 p-4">
-                            <p className="font-semibold">Generation Failed</p>
-                            <p>{error}</p>
-                        </div>
-                    ) : generatedVideoUrl ? (
-                        <video src={generatedVideoUrl} controls autoPlay loop className="max-w-full max-h-full rounded-md shadow-lg" />
-                    ) : (
-                        <div className="text-center text-text-secondary">
-                            <VideoPlaceholder />
-                            <p className="mt-4">Your generated video will appear here</p>
-                        </div>
-                    )}
                 </div>
             </div>
-        </div>
+        </LockedFeatureGate>
     );
 };
 

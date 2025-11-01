@@ -8,6 +8,7 @@ const LogoIcon = () => (
         <path d="M32 49C41.3888 49 49 41.3888 49 32C49 26.4544 46.5696 21.5168 42.752 18.2496" stroke="#facc15" strokeWidth="4" strokeLinecap="round"/>
     </svg>
 );
+const PremiumIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.321l5.478.398a.562.562 0 01.31.956l-4.2 3.548a.562.562 0 00-.192.558l1.287 5.345a.562.562 0 01-.82.634l-4.79-2.848a.563.563 0 00-.58 0l-4.79 2.848a.562.562 0 01-.82-.634l1.287-5.345a.562.562 0 00-.192-.558l-4.2-3.548a.562.562 0 01.31-.956l5.478-.398a.563.563 0 00.475-.321L11.48 3.5z" /></svg>);
 const ChatIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.53-.388A5.86 5.86 0 0111.25 12.75a5.86 5.86 0 013.22-5.412A9.753 9.753 0 0112 3c4.97 0 9 3.694 9 8.25z" /></svg>);
 const TranslateIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" /></svg>);
 const BookIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>);
@@ -22,7 +23,8 @@ const SpeakerIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" v
 const ProfileIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>);
 const SettingsIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.113-1.113l.448-.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113M12 21.75a9.75 9.75 0 100-19.5 9.75 9.75 0 000 19.5zM12 8.25a3.75 3.75 0 110 7.5 3.75 3.75 0 010-7.5z" /></svg>);
 
-const features: { id: FeatureId; name: string; icon: React.ReactElement }[] = [
+const features: { id: FeatureId; name: string; icon: React.ReactElement, isPremium?: boolean }[] = [
+    { id: 'premium', name: 'Go Premium', icon: <PremiumIcon />, isPremium: true },
     { id: 'learningHub', name: 'Learning Hub', icon: <BrainIcon /> },
     { id: 'lessons', name: 'Interactive Lessons', icon: <BookIcon /> },
     { id: 'chat', name: 'Practice Conversation', icon: <ChatIcon /> },
@@ -54,21 +56,27 @@ const Sidebar: React.FC<SidebarProps> = ({
         <span>Linguamate.ai</span>
       </div>
       <nav className="flex flex-col space-y-2 flex-1">
-        {features.map((feature) => (
-          <button
-            key={feature.id}
-            onClick={() => setActiveFeature(feature.id)}
-            className={`flex items-center space-x-3 p-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-primary ${
-              activeFeature === feature.id
-                ? 'bg-accent-primary text-background-primary font-semibold shadow-lg'
-                : 'hover:bg-background-tertiary/50 hover:text-text-primary'
-            }`}
-            aria-current={activeFeature === feature.id ? 'page' : undefined}
-          >
-            {feature.icon}
-            <span>{feature.name}</span>
-          </button>
-        ))}
+        {features.map((feature) => {
+          const isActive = activeFeature === feature.id;
+          let buttonClass = 'hover:bg-background-tertiary/50 hover:text-text-primary';
+          if (isActive) {
+            buttonClass = 'bg-accent-primary text-background-primary font-semibold shadow-lg';
+          } else if (feature.isPremium) {
+            buttonClass = 'bg-accent-secondary/20 text-accent-secondary hover:bg-accent-secondary/30';
+          }
+
+          return (
+            <button
+              key={feature.id}
+              onClick={() => setActiveFeature(feature.id)}
+              className={`flex items-center space-x-3 p-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-primary ${buttonClass}`}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              {feature.icon}
+              <span>{feature.name}</span>
+            </button>
+          );
+        })}
       </nav>
       
       <div className="pt-4 border-t border-background-tertiary/50">

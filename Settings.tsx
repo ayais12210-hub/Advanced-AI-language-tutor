@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { Language, ExperienceLevel, FeatureId } from './types';
+import { Language, ExperienceLevel, FeatureId, ModelId, ThinkingPreset, TtsProvider, SttProvider } from './types';
 import { languages } from './languages';
 
 // A custom hook to manage state with localStorage persistence
@@ -36,6 +35,14 @@ interface SettingsProps {
     setLearningLanguage: (language: Language) => void;
     setExperienceLevel: (level: ExperienceLevel) => void;
     setActiveFeature: (feature: FeatureId) => void;
+    globalModel: ModelId;
+    setGlobalModel: (model: ModelId) => void;
+    thinkingPreset: ThinkingPreset;
+    setThinkingPreset: (preset: ThinkingPreset) => void;
+    ttsProvider: TtsProvider;
+    setTtsProvider: (provider: TtsProvider) => void;
+    sttProvider: SttProvider;
+    setSttProvider: (provider: SttProvider) => void;
 }
 
 // --- ICONS ---
@@ -48,7 +55,6 @@ const DifficultyIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0
 const AutoAdaptIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M10.832 2.622a.75.75 0 01.836.368l1.42 2.871 3.178 .46a.75.75 0 01.416 1.28l-2.3 2.242.543 3.165a.75.75 0 01-1.088.79l-2.842-1.494-2.843 1.494a.75.75 0 01-1.087-.79l.543-3.165-2.3-2.242a.75.75 0 01.416-1.28l3.178-.46 1.42-2.87a.75.75 0 01.836-.369z" clipRule="evenodd" /></svg>);
 const SoundIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path d="M10 2.5a.75.75 0 01.75.75v13.5a.75.75 0 01-1.5 0V3.25A.75.75 0 0110 2.5zM3.5 6.25a.75.75 0 00-1.5 0v7.5a.75.75 0 001.5 0v-7.5zM16.5 6.25a.75.75 0 00-1.5 0v7.5a.75.75 0 001.5 0v-7.5z" /></svg>);
 const HapticIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M1.5 8.356A3.483 3.483 0 012.72 6.03l.36-.622a.75.75 0 011.299.75l-.36.623a2.002 2.002 0 00-1.12 2.574l.01.018a.75.75 0 01-1.07 1.052l-.01-.018A3.502 3.502 0 011.5 8.356zm17 0a3.483 3.483 0 00-1.22-2.326l-.36-.622a.75.75 0 10-1.3.75l.36.623a2.002 2.002 0 011.12 2.574l-.01.018a.75.75 0 101.07 1.052l.01-.018A3.502 3.502 0 0018.5 8.356zM5.503 3.82a.75.75 0 01.75 1.3l-1.02 1.767a2 2 0 001.733 3.003l.017.001a.75.75 0 01.003 1.5l-.017.001a3.5 3.5 0 01-3.033-5.255l1.02-1.767a.75.75 0 011.3 0zm9.994 0a.75.75 0 00-.75 1.3l1.02 1.767a2 2 0 01-1.733 3.003l-.017.001a.75.75 0 00-.003 1.5l.017.001a3.5 3.5 0 003.033-5.255l-1.02-1.767a.75.75 0 00-1.3 0z" clipRule="evenodd" /></svg>);
-{/* FIX: Corrected a truncated SVG path data string that was causing a syntax error. */}
 const AutoplayIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path d="M6.3 2.84A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.27l9.344-5.89a1.5 1.5 0 000-2.54L6.3 2.84z" /></svg>);
 const NotificationIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M10 2a6 6 0 00-6 6c0 1.887-.454 3.665-1.257 5.234a.75.75 0 00.657 1.085h13.2a.75.75 0 00.656-1.085A13.43 13.43 0 0116 8a6 6 0 00-6-6zM8.25 16.5a1.75 1.75 0 103.5 0h-3.5z" clipRule="evenodd" /></svg>);
 const TimeIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 001.5-.06l-.3-7.5zm8.25-.22a.75.75 0 01-.22.53l-2.25 2.25a.75.75 0 01-1.06-1.06l2.25-2.25a.75.75 0 01.82.53z" clipRule="evenodd" /></svg>);
@@ -57,13 +63,51 @@ const ResetIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20
 const LegalIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0015.5 2h-11zM10 4a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 4zM8.75 8.25a.75.75 0 01.75-.75h1a.75.75 0 010 1.5h-1a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5H9.5z" clipRule="evenodd" /></svg>);
 const HelpIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.06-1.061l2.5-2.5a.75.75 0 011.06 0l2.5 2.5a.75.75 0 11-1.06 1.06L12 5.31v5.438a.75.75 0 01-1.5 0V5.31L8.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg>);
 const VersionIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M10 2c-1.717 0-3.417.345-5.025.975A.75.75 0 004.25 4.5a.75.75 0 00.75-.75 6.5 6.5 0 0110 0 .75.75 0 00.75.75.75.75 0 00.725-1.275A8 8 0 0010 2zM4.017 6.44a.75.75 0 01.566-.02l3.431 1.47a.75.75 0 010 1.299l-3.43 1.47a.75.75 0 11-.532-1.402l2.36-1.012-2.36-1.012a.75.75 0 01-.034-1.278zm11.966 0a.75.75 0 00-.566-.02L11.986 7.43a.75.75 0 000 1.299l3.43 1.47a.75.75 0 10.532-1.402l-2.36-1.012 2.36-1.012a.75.75 0 00.034-1.278zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15z" clipRule="evenodd" /></svg>);
+const BrainIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M6.25 8.75a.75.75 0 00-1.5 0v2.5A.75.75 0 006.25 12h1.5a.75.75 0 000-1.5h-1.5v-1.75z" clipRule="evenodd" /><path d="M5.002 4.5h9.996a3.5 3.5 0 013.5 3.5v3.496a3.5 3.5 0 01-3.5 3.5H5.002a3.5 3.5 0 01-3.5-3.5V8a3.5 3.5 0 013.5-3.5zM1.502 8a2 2 0 012-2h9.996a2 2 0 012 2v3.496a2 2 0 01-2 2H3.502a2 2 0 01-2-2V8z" /><path fillRule="evenodd" d="M12.25 8.75a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5z" clipRule="evenodd" /></svg>);
+const ClockIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.25 7.5a.75.75 0 000 1.5h3.5a.75.75 0 000-1.5h-3.5z" clipRule="evenodd" /></svg>);
+const MicIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-text-secondary"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" /><path d="M5.5 8.5A.5.5 0 016 8v2a4 4 0 008 0V8a.5.5 0 011 0v2a5 5 0 01-10 0V8a.5.5 0 01.5-.5z" /><path d="M10 18a.5.5 0 00.5-.5v-2.09a7.002 7.002 0 004.896-6.108.5.5 0 00-.992-.123A6.002 6.002 0 0110 14c-2.33 0-4.32-1.32-5.404-3.321a.5.5 0 00-.992.123A7.002 7.002 0 009.5 15.41V17.5a.5.5 0 00.5.5z" /></svg>);
 
+// --- MODEL DEFINITIONS ---
+const models = {
+    'Google': [
+        { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+        { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+    ],
+    'OpenAI (simulated)': [
+        { id: 'gpt-5', name: 'GPT-5' },
+        { id: 'gpt-4o', name: 'GPT-4o' },
+        { id: 'gpt-4.1', name: 'GPT-4.1 (Legacy)' },
+        { id: 'o3', name: 'o3 (Legacy)' },
+        { id: 'o4-mini', name: 'o4-mini (Legacy)' },
+    ],
+    'Anthropic (simulated)': [
+        { id: 'claude-opus-4.1', name: 'Opus 4.1' },
+        { id: 'claude-sonnet-4.5', name: 'Sonnet 4.5' },
+        { id: 'claude-haiku-4.5', name: 'Haiku 4.5' },
+        { id: 'claude-opus-4', name: 'Opus 4 (Legacy)' },
+        { id: 'claude-sonnet-4', name: 'Sonnet 4 (Legacy)' },
+        { id: 'claude-sonnet-3.7', name: 'Sonnet 3.7 (Legacy)' },
+        { id: 'claude-opus-3', name: 'Opus 3 (Legacy)' },
+        { id: 'claude-haiku-3.5', name: 'Haiku 3.5 (Legacy)' },
+    ]
+};
+
+const thinkingPresets = [
+    { id: 'auto', name: 'Auto - Decides how long to think' },
+    { id: 'instant', name: 'Instant - Answers right away' },
+    { id: 'mini', name: 'Thinking mini - Thinks quickly' },
+    { id: 'thinking', name: 'Thinking - Thinks longer for better answers' },
+];
 
 // --- MAIN COMPONENT ---
 const Settings: React.FC<SettingsProps> = ({
     nativeLanguage, learningLanguage, experienceLevel,
     setNativeLanguage, setLearningLanguage, setExperienceLevel,
-    setActiveFeature
+    setActiveFeature,
+    globalModel, setGlobalModel,
+    thinkingPreset, setThinkingPreset,
+    ttsProvider, setTtsProvider,
+    sttProvider, setSttProvider,
 }) => {
     // Component-level state for settings that might not be in App.tsx
     const [dailyGoal, setDailyGoal] = usePersistentState('dailyGoal', 15);
@@ -181,6 +225,46 @@ const Settings: React.FC<SettingsProps> = ({
                         </SettingsItem>
                     </SettingsSection>
                     
+                     {/* AI Models & Voice */}
+                    <SettingsSection title="AI Models & Voice" description="Configure the AI engines that power your learning experience.">
+                        <SettingsItem icon={<BrainIcon />} title="Default Language Model">
+                            <select value={globalModel} onChange={e => setGlobalModel(e.target.value as ModelId)} className="w-full bg-background-tertiary rounded-md p-2 text-sm focus:ring-1 focus:ring-accent-primary focus:outline-none">
+                                {Object.entries(models).map(([provider, modelList]) => (
+                                    <optgroup key={provider} label={provider}>
+                                        {modelList.map(model => (
+                                            <option key={model.id} value={model.id}>{model.name}</option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                            </select>
+                        </SettingsItem>
+                        
+                        {globalModel === 'gpt-5' && (
+                            <SettingsItem icon={<ClockIcon />} title="Thinking Time (for GPT-5)">
+                                <select value={thinkingPreset} onChange={e => setThinkingPreset(e.target.value as ThinkingPreset)} className="w-full bg-background-tertiary rounded-md p-2 text-sm focus:ring-1 focus:ring-accent-primary focus:outline-none">
+                                    {thinkingPresets.map(preset => (
+                                        <option key={preset.id} value={preset.id}>{preset.name}</option>
+                                    ))}
+                                </select>
+                            </SettingsItem>
+                        )}
+
+                        <SettingsItem icon={<SoundIcon />} title="Text-to-Speech (TTS) Voice">
+                            <select value={ttsProvider} onChange={e => setTtsProvider(e.target.value as TtsProvider)} className="w-full bg-background-tertiary rounded-md p-2 text-sm focus:ring-1 focus:ring-accent-primary focus:outline-none">
+                                <option value="Gemini">Gemini Voices</option>
+                                <option value="ElevenLabs">ElevenLabs (Simulated)</option>
+                            </select>
+                        </SettingsItem>
+                        <SettingsItem icon={<MicIcon />} title="Speech-to-Text (STT) Engine">
+                            <select value={sttProvider} onChange={e => setSttProvider(e.target.value as SttProvider)} className="w-full bg-background-tertiary rounded-md p-2 text-sm focus:ring-1 focus:ring-accent-primary focus:outline-none">
+                                <option value="Gemini">Gemini (Live API)</option>
+                                <option value="Whisper">Whisper (Simulated)</option>
+                                <option value="Deepgram">Deepgram (Simulated)</option>
+                            </select>
+                            <p className="text-xs text-text-secondary mt-1">All STT is powered by Gemini for real-time performance.</p>
+                        </SettingsItem>
+                    </SettingsSection>
+
                     {/* Audio & Haptics */}
                     <SettingsSection title="Audio & Haptics" description="Manage sound and feedback settings.">
                         <SettingsItem icon={<SoundIcon />} title="Sound Effects">

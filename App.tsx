@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FeatureId, Language, ExperienceLevel, UserGoal, UserInterest, ProfileStats, Badge, User, JournalEntry } from './types';
+import { FeatureId, Language, ExperienceLevel, UserGoal, UserInterest, ProfileStats, Badge, User, JournalEntry, SubscriptionTier, ModelId, ThinkingPreset, TtsProvider, SttProvider } from './types';
 import { languages } from './languages';
 import { badgeMasterList } from './achievements';
 import Sidebar from './Sidebar';
@@ -19,6 +19,7 @@ import Settings from './Settings';
 import Help from './Help';
 import PrivacyPolicy from './PrivacyPolicy';
 import Profile from './Profile';
+import Premium from './Premium';
 
 const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   chat: Chat,
@@ -36,6 +37,7 @@ const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   help: Help,
   privacyPolicy: PrivacyPolicy,
   profile: Profile,
+  premium: Premium,
 };
 
 // A custom hook to manage state with localStorage persistence
@@ -64,7 +66,7 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch
 
 const App: React.FC = () => {
   const [showDashboard, setShowDashboard] = usePersistentState('showDashboard', false);
-  const [activeFeature, setActiveFeature] = useState<FeatureId>('chat');
+  const [activeFeature, setActiveFeature] = useState<FeatureId>('settings');
   const [nativeLanguage, setNativeLanguage] = usePersistentState<Language>('nativeLanguage', languages.find(l => l.code === 'en') || languages[0]);
   const [learningLanguage, setLearningLanguage] = usePersistentState<Language>('learningLanguage', languages.find(l => l.code === 'es') || languages[1]);
   
@@ -72,6 +74,13 @@ const App: React.FC = () => {
   const [experienceLevel, setExperienceLevel] = usePersistentState<ExperienceLevel>('experienceLevel', 'Beginner');
   const [userGoals, setUserGoals] = usePersistentState<UserGoal[]>('userGoals', []);
   const [userInterests, setUserInterests] = usePersistentState<UserInterest[]>('userInterests', []);
+  const [subscriptionTier, setSubscriptionTier] = usePersistentState<SubscriptionTier>('subscriptionTier', 'Free');
+
+  // --- NEW GLOBAL AI SETTINGS ---
+  const [globalModel, setGlobalModel] = usePersistentState<ModelId>('globalModel', 'gemini-2.5-flash');
+  const [thinkingPreset, setThinkingPreset] = usePersistentState<ThinkingPreset>('thinkingPreset', 'auto');
+  const [ttsProvider, setTtsProvider] = usePersistentState<TtsProvider>('ttsProvider', 'Gemini');
+  const [sttProvider, setSttProvider] = usePersistentState<SttProvider>('sttProvider', 'Gemini');
 
   // --- NEW CENTRALIZED USER STATE ---
   const [isLoggedIn, setIsLoggedIn] = usePersistentState('isLoggedIn', false);
@@ -82,8 +91,6 @@ const App: React.FC = () => {
     wordsLearned: 0,
     xpPoints: 0,
   });
-  // FIX: The usePersistentState hook expects a value for its defaultValue, not a lazy initializer function.
-  // The function wrapper is removed to pass the array directly, resolving the type error.
   const [userBadges, setUserBadges] = usePersistentState<Badge[]>('userBadges', badgeMasterList.map(b => ({ ...b, earned: false })));
   const [journalEntries, setJournalEntries] = usePersistentState<JournalEntry[]>('journalEntries', []);
 
@@ -97,6 +104,7 @@ const App: React.FC = () => {
   const handleSignOut = () => {
     setIsLoggedIn(false);
     setUser(null);
+    setSubscriptionTier('Free'); // Downgrade on sign out
     // Optionally reset stats on sign out, or persist them per-account
     // For this demo, we'll keep them to show persistence.
   };
@@ -207,6 +215,18 @@ const App: React.FC = () => {
           onJournalSave={handleJournalSave}
           addXp={addXp}
           incrementChatCount={incrementChatCount}
+          // Global AI settings props
+          globalModel={globalModel}
+          setGlobalModel={setGlobalModel}
+          thinkingPreset={thinkingPreset}
+          setThinkingPreset={setThinkingPreset}
+          ttsProvider={ttsProvider}
+          setTtsProvider={setTtsProvider}
+          sttProvider={sttProvider}
+          setSttProvider={setSttProvider}
+          // Subscription props
+          subscriptionTier={subscriptionTier}
+          setSubscriptionTier={setSubscriptionTier}
         />
       </main>
     </div>

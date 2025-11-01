@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Modality, Type } from "@google/genai";
-import { Language } from './types';
+import { Language, TtsProvider } from './types';
 import SmartSuggestions from './SmartSuggestions';
 import { PageHeader } from './PageHeader';
 
@@ -46,6 +46,7 @@ interface TTSProps {
 const TTS: React.FC<TTSProps> = ({ learningLanguage, nativeLanguage, setNativeLanguage, setLearningLanguage }) => {
     const [text, setText] = useState('');
     const [selectedVoice, setSelectedVoice] = useState('Kore');
+    const [ttsProvider, setTtsProvider] = useState<TtsProvider>('Gemini');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
@@ -98,6 +99,9 @@ const TTS: React.FC<TTSProps> = ({ learningLanguage, nativeLanguage, setNativeLa
         }
 
         try {
+            // Simulate ElevenLabs by using a specific, high-quality voice and ignoring the dropdown.
+            const voiceName = ttsProvider === 'ElevenLabs' ? 'Zephyr' : selectedVoice;
+
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
             const response = await ai.models.generateContent({
                 model: "gemini-2.5-flash-preview-tts",
@@ -106,7 +110,7 @@ const TTS: React.FC<TTSProps> = ({ learningLanguage, nativeLanguage, setNativeLa
                     responseModalities: [Modality.AUDIO],
                     speechConfig: {
                         voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: selectedVoice },
+                            prebuiltVoiceConfig: { voiceName },
                         },
                     },
                 },
@@ -127,9 +131,13 @@ const TTS: React.FC<TTSProps> = ({ learningLanguage, nativeLanguage, setNativeLa
 
             setAudioSource(source);
 
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError('Failed to generate speech. Please try again.');
+            if (err?.toString().includes('quota')) {
+                setError('API quota exceeded. Please check your plan or try again later.');
+            } else {
+                setError('Failed to generate speech. Please try again.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -162,20 +170,34 @@ const TTS: React.FC<TTSProps> = ({ learningLanguage, nativeLanguage, setNativeLa
                             isDisabled={isLoading}
                         />
                     </div>
+                    
                     <div className="mt-6">
-                        <label htmlFor="voice-select" className="block text-sm font-medium text-text-secondary mb-2">
-                            Select a Voice
+                        <label className="block text-sm font-medium text-text-secondary mb-2">
+                            Voice Provider
                         </label>
-                        <select
-                            id="voice-select"
-                            value={selectedVoice}
-                            onChange={(e) => setSelectedVoice(e.target.value)}
-                            disabled={isLoading}
-                            className="w-full bg-background-tertiary rounded-md p-3 text-sm text-text-primary focus:ring-1 focus:ring-accent-primary focus:outline-none"
-                        >
-                            {voices.map(voice => <option key={voice} value={voice}>{voice}</option>)}
-                        </select>
+                        <div className="flex bg-background-tertiary rounded-md p-1">
+                            <button onClick={() => setTtsProvider('Gemini')} disabled={isLoading} className={`flex-1 p-2 text-sm rounded transition-colors ${ttsProvider === 'Gemini' ? 'bg-accent-primary text-background-primary font-semibold' : 'text-text-secondary hover:bg-background-secondary/50'}`}>Gemini</button>
+                            <button onClick={() => setTtsProvider('ElevenLabs')} disabled={isLoading} className={`flex-1 p-2 text-sm rounded transition-colors ${ttsProvider === 'ElevenLabs' ? 'bg-accent-primary text-background-primary font-semibold' : 'text-text-secondary hover:bg-background-secondary/50'}`}>ElevenLabs (Simulated)</button>
+                        </div>
                     </div>
+
+                    {ttsProvider === 'Gemini' && (
+                        <div className="mt-6">
+                            <label htmlFor="voice-select" className="block text-sm font-medium text-text-secondary mb-2">
+                                Select a Voice
+                            </label>
+                            <select
+                                id="voice-select"
+                                value={selectedVoice}
+                                onChange={(e) => setSelectedVoice(e.target.value)}
+                                disabled={isLoading}
+                                className="w-full bg-background-tertiary rounded-md p-3 text-sm text-text-primary focus:ring-1 focus:ring-accent-primary focus:outline-none"
+                            >
+                                {voices.map(voice => <option key={voice} value={voice}>{voice}</option>)}
+                            </select>
+                        </div>
+                    )}
+
                     {error && <p className="text-red-400 text-sm mt-4 text-center">{error}</p>}
                     <button
                         onClick={handleGenerateSpeech}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { Language, TranslationAnalysis } from './types';
+import { Language, TranslationAnalysis, TtsProvider } from './types';
 import SmartSuggestions from './SmartSuggestions';
 import { languages } from './languages';
 import { TranslationAnalysisCard } from './TranslationAnalysis';
@@ -59,6 +59,7 @@ const Translator: React.FC<TranslatorProps> = ({ nativeLanguage, learningLanguag
   const [isTtsLoading, setIsTtsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
+  const [ttsProvider, setTtsProvider] = useState<TtsProvider>('Gemini');
 
   useEffect(() => {
     const isSourceStillValid = sourceLang.code === learningLanguage.code || sourceLang.code === nativeLanguage.code;
@@ -168,9 +169,13 @@ All analysis fields MUST be in ${sourceLang.name} to ensure the user understands
       const result = JSON.parse(response.text);
       setAnalysisResult(result);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Sorry, the AI Coach analysis failed. The model may not have been able to provide a detailed breakdown for this text. Please try different wording or a more common phrase.');
+       if (err?.toString().includes('quota')) {
+            setError('API quota exceeded. Please check your plan or try again later.');
+       } else {
+            setError('Sorry, the AI Coach analysis failed. The model may not have been able to provide a detailed breakdown for this text. Please try different wording or a more common phrase.');
+       }
     } finally {
       setIsLoading(false);
     }
@@ -186,12 +191,13 @@ All analysis fields MUST be in ${sourceLang.name} to ensure the user understands
 
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+        const voiceName = ttsProvider === 'ElevenLabs' ? 'Zephyr' : 'Kore';
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash-preview-tts",
             contents: [{ parts: [{ text: `In ${targetLang.name}, say: ${textToSpeak}` }] }],
             config: {
                 responseModalities: [Modality.AUDIO],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
             },
         });
 
@@ -207,9 +213,13 @@ All analysis fields MUST be in ${sourceLang.name} to ensure the user understands
         source.start();
         setAudioSource(source);
 
-    } catch (err) {
+    } catch (err: any) {
         console.error(err);
-        setError('Failed to generate speech.');
+        if (err?.toString().includes('quota')) {
+            setError('Could not generate speech: API quota exceeded.');
+        } else {
+            setError('Failed to generate speech.');
+        }
     } finally {
         setIsTtsLoading(false);
     }
@@ -301,6 +311,8 @@ All analysis fields MUST be in ${sourceLang.name} to ensure the user understands
                         analysis={analysisResult} 
                         onPlayAudio={handlePlayAudio}
                         isTtsLoading={isTtsLoading}
+                        ttsProvider={ttsProvider}
+                        onTtsProviderChange={setTtsProvider}
                     />
                 ) : (
                     <div className="h-full flex items-center justify-center text-text-secondary text-center">

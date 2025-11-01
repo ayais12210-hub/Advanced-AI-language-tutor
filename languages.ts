@@ -78,7 +78,6 @@ export const languages: Language[] = [
   { code: 'ro', name: 'Romanian' },
   { code: 'ru', name: 'Russian' },
   { code: 'sm', name: 'Samoan' },
-  // FIX: Corrected typo `_code:` to `code:`.
   { code: 'gd', name: 'Scots Gaelic' },
   { code: 'sr', name: 'Serbian' },
   { code: 'st', name: 'Sesotho' },

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, FormEvent, useCallback } from 'react';
 import { GoogleGenAI, Modality, Type, Chat as GeminiChat } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
-import { Notebook, Source, SourceType, ChatMessage } from './types';
+import { Notebook, Source, SourceType, ChatMessage, SubscriptionTier, FeatureId, TtsProvider } from './types';
+import LockedFeatureGate from './LockedFeatureGate';
+
 
 // --- ICONS ---
 const Spinner = () => (<div className="w-full flex justify-center p-8"><svg className="animate-spin h-10 w-10 text-accent-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>);
@@ -161,9 +163,13 @@ const SummaryTab: React.FC<{notebook: Notebook, onUpdate: (nb: Notebook) => void
             if (type === 'points') updatedNotebook.keyPoints = resultText;
             if (type === 'faq') updatedNotebook.faq = resultText;
             onUpdate(updatedNotebook);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Analysis failed", error);
-            alert("Failed to generate analysis.");
+            if (error?.toString().includes('quota')) {
+                alert("Failed to generate analysis: API quota exceeded. Please check your plan or try again later.");
+            } else {
+                alert("Failed to generate analysis.");
+            }
         } finally {
             setLoading(null);
         }
@@ -485,8 +491,15 @@ const ChatTab: React.FC<{notebook: Notebook, onUpdate: (nb: Notebook) => void}> 
                     chatHistory: notebook.chatHistory?.map(m => m.id === modelMessageId ? { ...m, parts: [{ text: modelResponseText }] } : m) 
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Chat failed:", error);
+            let errorMessage = "Sorry, the chat encountered an error.";
+            if (error?.toString().includes('quota')) {
+                errorMessage = "API quota exceeded for today. Please check your plan or try again later.";
+            }
+            // Add error message to chat history
+            const finalHistory = notebook.chatHistory || [];
+            onUpdate({ ...notebook, chatHistory: [...finalHistory, { id: `error-${Date.now()}`, role: 'model', parts: [{ text: errorMessage }] }] });
         } finally {
             setIsLoading(false);
         }
@@ -534,6 +547,7 @@ const ChatTab: React.FC<{notebook: Notebook, onUpdate: (nb: Notebook) => void}> 
 const StudioTab: React.FC<{notebook: Notebook, onUpdate: (nb: Notebook) => void}> = ({ notebook, onUpdate }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [ttsProvider, setTtsProvider] = useState<TtsProvider>('Gemini');
     const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
     const audioBufferRef = useRef<AudioBuffer | null>(null);
@@ -562,18 +576,26 @@ const StudioTab: React.FC<{notebook: Notebook, onUpdate: (nb: Notebook) => void}
                 config: { tools: [{ googleSearch: {} }] },
             });
             const summaryText = summaryResponse.text;
+            const voiceName = ttsProvider === 'ElevenLabs' ? 'Zephyr' : 'Kore';
        
             const ttsResponse = await ai.models.generateContent({
                 model: "gemini-2.5-flash-preview-tts",
                 contents: [{ parts: [{ text: summaryText }] }],
-                config: { responseModalities: [Modality.AUDIO], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } } },
+                config: { responseModalities: [Modality.AUDIO], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } } },
             });
 
             const base64Audio = ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
             if (!base64Audio) throw new Error("No audio data received.");
 
             onUpdate({ ...notebook, audioSummary: summaryText, audioData: base64Audio });
-        } catch (err) { console.error(err); alert('Failed to generate audio overview.'); } 
+        } catch (err: any) { 
+            console.error(err); 
+            if (err?.toString().includes('quota')) {
+                alert('Failed to generate audio overview: API quota exceeded. Please check your plan or try again later.');
+            } else {
+                alert('Failed to generate audio overview.'); 
+            }
+        } 
         finally { setIsLoading(false); }
     };
 
@@ -612,9 +634,18 @@ const StudioTab: React.FC<{notebook: Notebook, onUpdate: (nb: Notebook) => void}
                         </div>
                     </>
                 ) : (
-                    <button onClick={handleGenerateOverview} className="bg-accent-primary text-background-primary font-bold py-3 px-6 rounded-lg hover:bg-accent-primary-dark transition-colors">
-                        Generate Audio Overview
-                    </button>
+                    <div className="flex flex-col items-center">
+                        <div className="mb-4 w-full max-w-xs">
+                            <label className="block text-xs font-medium text-text-secondary mb-1">Voice Provider</label>
+                            <select value={ttsProvider} onChange={e => setTtsProvider(e.target.value as TtsProvider)} className="w-full bg-background-tertiary rounded-md p-2 text-sm focus:ring-1 focus:ring-accent-primary focus:outline-none">
+                                <option value="Gemini">Gemini</option>
+                                <option value="ElevenLabs">ElevenLabs (Simulated)</option>
+                            </select>
+                        </div>
+                        <button onClick={handleGenerateOverview} className="bg-accent-primary text-background-primary font-bold py-3 px-6 rounded-lg hover:bg-accent-primary-dark transition-colors">
+                            Generate Audio Overview
+                        </button>
+                    </div>
                 )}
             </div>
         </div>
@@ -623,7 +654,12 @@ const StudioTab: React.FC<{notebook: Notebook, onUpdate: (nb: Notebook) => void}
 
 
 // --- MAIN ANALYZER COMPONENT ---
-const ContentAnalyzer: React.FC = () => {
+interface ContentAnalyzerProps {
+    subscriptionTier: SubscriptionTier;
+    setActiveFeature: (feature: FeatureId) => void;
+}
+
+const ContentAnalyzer: React.FC<ContentAnalyzerProps> = ({ subscriptionTier, setActiveFeature }) => {
   const [notebooks, setNotebooks] = usePersistentState<Notebook[]>('content_analyzer_notebooks', []);
   const [activeNotebookId, setActiveNotebookId] = useState<string | null>(null);
   const activeNotebook = useMemo(() => notebooks.find(nb => nb.id === activeNotebookId), [notebooks, activeNotebookId]);
@@ -642,11 +678,20 @@ const ContentAnalyzer: React.FC = () => {
   
   const handleBackToDashboard = () => setActiveNotebookId(null);
 
-  if (activeNotebook) {
-    return <NotebookView notebook={activeNotebook} onUpdate={handleUpdateNotebook} onBack={handleBackToDashboard} />;
-  }
-
-  return <NotebooksDashboard notebooks={notebooks} onSelect={handleSelectNotebook} onCreate={handleCreateNotebook} />;
+  return (
+    <LockedFeatureGate
+        featureName="Content Analyzer"
+        requiredTier="Pro"
+        currentTier={subscriptionTier}
+        setActiveFeature={setActiveFeature}
+    >
+        {activeNotebook ? (
+            <NotebookView notebook={activeNotebook} onUpdate={handleUpdateNotebook} onBack={handleBackToDashboard} />
+        ) : (
+            <NotebooksDashboard notebooks={notebooks} onSelect={handleSelectNotebook} onCreate={handleCreateNotebook} />
+        )}
+    </LockedFeatureGate>
+  );
 };
 
 export default ContentAnalyzer;
