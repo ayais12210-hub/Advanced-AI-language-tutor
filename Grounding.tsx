@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, FormEvent, useCallback } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
-import { Language, GroundingChunk } from './types';
+import { Language, GroundingChunk, FeatureId } from './types';
 import SmartSuggestions from './SmartSuggestions';
 import { PageHeader } from './PageHeader';
 
@@ -23,9 +23,10 @@ interface GroundingProps {
   learningLanguage: Language;
   setNativeLanguage: (language: Language) => void;
   setLearningLanguage: (language: Language) => void;
+  setActiveFeature: (feature: FeatureId) => void;
 }
 
-const Grounding: React.FC<GroundingProps> = ({ learningLanguage, nativeLanguage, setNativeLanguage, setLearningLanguage }) => {
+const Grounding: React.FC<GroundingProps> = ({ learningLanguage, nativeLanguage, setNativeLanguage, setLearningLanguage, setActiveFeature }) => {
     const [userInput, setUserInput] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -163,6 +164,7 @@ const Grounding: React.FC<GroundingProps> = ({ learningLanguage, nativeLanguage,
                 learningLanguage={learningLanguage}
                 setNativeLanguage={setNativeLanguage}
                 setLearningLanguage={setLearningLanguage}
+                setActiveFeature={setActiveFeature}
             />
             <div className="flex-1 flex flex-col bg-background-secondary/50 rounded-lg border border-background-tertiary/50 overflow-hidden mt-6">
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">

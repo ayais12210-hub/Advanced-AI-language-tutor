@@ -1,10 +1,17 @@
 import React from 'react';
-import { Unit, Lesson, LessonStatus } from './types';
+import { Unit, Lesson, LessonStatus, Difficulty } from './types';
 
 const getStatus = (lessonIndex: number, completedCount: number): LessonStatus => {
     if (lessonIndex < completedCount) return 'completed';
     if (lessonIndex === completedCount) return 'active';
     return 'locked';
+};
+
+const difficultyColors: Record<Difficulty, string> = {
+    Easy: 'bg-green-500/20 text-green-300',
+    Medium: 'bg-blue-500/20 text-blue-300',
+    Hard: 'bg-orange-500/20 text-orange-300',
+    Expert: 'bg-red-500/20 text-red-300',
 };
 
 const LessonIcon: React.FC<{ type: Lesson['type'] }> = ({ type }) => {
@@ -35,8 +42,13 @@ const LessonNode: React.FC<{ lesson: Lesson, status: LessonStatus, onClick: () =
             onClick={onClick}
             disabled={status === 'locked'}
             className={`relative w-28 h-28 rounded-full border-4 flex flex-col items-center justify-center p-2 text-center transition-all duration-300 transform hover:scale-105 ${statusClasses[status]}`}
-            aria-label={`${lesson.title}, Status: ${status}`}
+            aria-label={`${lesson.title}, Status: ${status}${lesson.difficulty ? `, Difficulty: ${lesson.difficulty}` : ''}`}
         >
+            {lesson.difficulty && (
+                <span className={`absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${difficultyColors[lesson.difficulty]}`}>
+                    {lesson.difficulty}
+                </span>
+            )}
             <LessonIcon type={lesson.type} />
             <span className="text-xs font-bold mt-1 leading-tight">{lesson.title}</span>
         </button>

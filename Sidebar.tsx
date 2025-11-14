@@ -14,100 +14,112 @@ const TranslateIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none"
 const BookIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>);
 const BrainIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 01-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 013.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 013.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 01-3.09 3.09z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 12a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 12a8.25 8.25 0 11-16.5 0 8.25 8.25 0 0116.5 0z" /></svg>);
 const EditIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 01-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 013.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 013.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 01-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.572L16.5 21.75l-.398-1.178a3.375 3.375 0 00-2.455-2.456L12.75 18l1.178-.398a3.375 3.375 0 002.455-2.456L16.5 14.25l.398 1.178a3.375 3.375 0 002.456 2.456L20.25 18l-1.178.398a3.375 3.375 0 00-2.456 2.456z" /></svg>);
-const MicIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m12 7.5v-1.5a6 6 0 00-6-6v-1.5a6 6 0 00-6 6v1.5m6 7.5a6 6 0 00-6-6" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75a3 3 0 003-3v-3a3 3 0 00-6 0v3a3 3 0 003 3z" /></svg>);
 const GlobeIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.953 11.953 0 0112 13.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0l-2.11 2.11m-2.11-2.11l2.11 2.11m0 0l-2.11 2.11m2.11-2.11l2.11 2.11M12 13.5a2.25 2.25 0 110-4.5 2.25 2.25 0 010 4.5z" /></svg>);
 const AnalyzerIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>);
 const SpeakerIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28 .53v15.88a.75.75 0 01-1.28 .53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>);
 const ProfileIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>);
 const SettingsIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.113-1.113l.448-.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113l.064.383a2.25 2.25 0 01-1.248 2.51l-.507.254a2.25 2.25 0 00-1.248 2.51l.064.383c.09.542.56 1.007 1.113 1.113l.448.113a2.25 2.25 0 012.11 0l.448.113c.553.106 1.023.571 1.113 1.113M12 21.75a9.75 9.75 0 100-19.5 9.75 9.75 0 000 19.5zM12 8.25a3.75 3.75 0 110 7.5 3.75 3.75 0 010-7.5z" /></svg>);
+const MinimizeIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" /></svg>);
+const MaximizeIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 4.5l7.5 7.5-7.5 7.5m6-15l7.5 7.5-7.5 7.5" /></svg>);
 
-const features: { id: FeatureId; name: string; icon: React.ReactElement, isPremium?: boolean }[] = [
-    { id: 'premium', name: 'Go Premium', icon: <PremiumIcon />, isPremium: true },
-    { id: 'learningHub', name: 'Learning Hub', icon: <BrainIcon /> },
-    { id: 'lessons', name: 'Interactive Lessons', icon: <BookIcon /> },
+interface Feature {
+    id: FeatureId;
+    name: string;
+    // FIX: The type `JSX.Element` was not found due to an issue with global JSX namespace merging.
+    // Switched to `React.ReactElement` which is a more stable and explicit type for React components.
+    icon: React.ReactElement;
+}
+
+const coreFeatures: Feature[] = [
     { id: 'chat', name: 'Practice Conversation', icon: <ChatIcon /> },
-    { id: 'translator', name: 'AI Translator', icon: <TranslateIcon /> },
-    { id: 'liveConvo', name: 'Live Tutoring', icon: <MicIcon /> },
-    { id: 'tts', name: 'Pronunciation Practice', icon: <SpeakerIcon /> },
+    { id: 'translator', name: 'AI Language Coach', icon: <TranslateIcon /> },
+    { id: 'lessons', name: 'Interactive Lessons', icon: <BookIcon /> },
+    { id: 'learningHub', name: 'Learning Hub', icon: <BrainIcon /> },
+];
+
+const aiTools: Feature[] = [
+    { id: 'speechAnalysis', name: 'Accent Coach', icon: <SpeakerIcon /> },
     { id: 'visualStudio', name: 'Visual Studio', icon: <EditIcon /> },
     { id: 'grounding', name: 'Explore & Discover', icon: <GlobeIcon /> },
     { id: 'contentAnalyzer', name: 'Content Analyzer', icon: <AnalyzerIcon /> },
 ];
 
-interface SidebarProps {
-  activeFeature: FeatureId;
-  setActiveFeature: (feature: FeatureId) => void;
-  isLoggedIn: boolean;
+const profileAndSettings: Feature[] = [
+    { id: 'profile', name: 'Profile', icon: <ProfileIcon /> },
+    { id: 'settings', name: 'Settings', icon: <SettingsIcon /> },
+];
+
+interface FeatureButtonProps {
+    feature: Feature;
+    isActive: boolean;
+    isMinimized: boolean;
+    onClick: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ 
-  activeFeature, 
-  setActiveFeature,
-  isLoggedIn,
-}) => {
-  return (
-    <aside className="w-64 bg-background-secondary text-text-secondary flex flex-col p-4 border-r border-background-tertiary/50">
-      <div className="font-heading text-2xl font-bold mb-10 flex items-center space-x-3 text-text-primary pt-2">
-        <LogoIcon />
-        <span>Linguamate.ai</span>
-      </div>
-      <nav className="flex flex-col space-y-2 flex-1">
-        {features.map((feature) => {
-          const isActive = activeFeature === feature.id;
-          let buttonClass = 'hover:bg-background-tertiary/50 hover:text-text-primary';
-          if (isActive) {
-            buttonClass = 'bg-accent-primary text-background-primary font-semibold shadow-lg';
-          } else if (feature.isPremium) {
-            buttonClass = 'bg-accent-secondary/20 text-accent-secondary hover:bg-accent-secondary/30';
-          }
+const FeatureButton: React.FC<FeatureButtonProps> = ({ feature, isActive, isMinimized, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center w-full p-3 rounded-lg transition-colors duration-200 ${isActive ? 'bg-accent-primary text-background-primary' : 'text-text-secondary hover:bg-background-secondary hover:text-text-primary'}`}
+        aria-label={feature.name}
+        title={isMinimized ? feature.name : ''}
+    >
+        {feature.icon}
+        {!isMinimized && <span className="ml-4 font-semibold">{feature.name}</span>}
+    </button>
+);
 
-          return (
-            <button
-              key={feature.id}
-              onClick={() => setActiveFeature(feature.id)}
-              className={`flex items-center space-x-3 p-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-primary ${buttonClass}`}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              {feature.icon}
-              <span>{feature.name}</span>
-            </button>
-          );
-        })}
-      </nav>
-      
-      <div className="pt-4 border-t border-background-tertiary/50">
-        <button
-            onClick={() => setActiveFeature('profile')}
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-primary mb-1 ${
-            activeFeature === 'profile'
-                ? 'bg-accent-primary text-background-primary font-semibold shadow-lg'
-                : 'hover:bg-background-tertiary/50 hover:text-text-primary'
-            }`}
-            aria-current={activeFeature === 'profile' ? 'page' : undefined}
-        >
-            <ProfileIcon />
-            <span>{isLoggedIn ? 'Profile' : 'Sign In'}</span>
-        </button>
-        <button
-            onClick={() => setActiveFeature('settings')}
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-primary ${
-            activeFeature === 'settings'
-                ? 'bg-accent-primary text-background-primary font-semibold shadow-lg'
-                : 'hover:bg-background-tertiary/50 hover:text-text-primary'
-            }`}
-            aria-current={activeFeature === 'settings' ? 'page' : undefined}
-        >
-            <SettingsIcon />
-            <span>Settings</span>
-        </button>
-      </div>
+interface SidebarProps {
+    activeFeature: FeatureId;
+    setActiveFeature: (feature: FeatureId) => void;
+    isLoggedIn: boolean;
+    isSidebarMinimized: boolean;
+    setIsSidebarMinimized: (isMinimized: boolean) => void;
+}
 
-      <div className="mt-6 text-xs text-center text-text-secondary/70">
-        <p>Your AI Language Companion</p>
-        <p className="mt-1">&copy; 2024 Linguamate.ai</p>
-      </div>
-    </aside>
-  );
+const Sidebar: React.FC<SidebarProps> = ({ activeFeature, setActiveFeature, isLoggedIn, isSidebarMinimized, setIsSidebarMinimized }) => {
+    return (
+        <aside className={`bg-background-secondary flex flex-col transition-all duration-300 ease-in-out ${isSidebarMinimized ? 'w-20' : 'w-64'}`}>
+            <div className={`p-4 flex items-center ${isSidebarMinimized ? 'justify-center' : 'justify-between'}`}>
+                 <div className={`flex items-center gap-2 overflow-hidden ${isSidebarMinimized ? 'w-0' : 'w-auto'}`}>
+                    <LogoIcon />
+                    {!isSidebarMinimized && <span className="font-heading text-xl font-bold">Linguamate</span>}
+                 </div>
+                <button 
+                    onClick={() => setIsSidebarMinimized(!isSidebarMinimized)} 
+                    className="p-1 rounded-md text-text-secondary hover:text-text-primary hover:bg-background-tertiary"
+                    aria-label={isSidebarMinimized ? 'Expand sidebar' : 'Minimize sidebar'}
+                    title={isSidebarMinimized ? 'Expand sidebar' : 'Minimize sidebar'}
+                >
+                    {isSidebarMinimized ? <MaximizeIcon /> : <MinimizeIcon />}
+                </button>
+            </div>
+            
+            <nav className="flex-1 px-4 py-2 space-y-6">
+                <div>
+                    <h3 className={`px-3 text-xs font-semibold uppercase text-text-secondary mb-2 ${isSidebarMinimized ? 'hidden' : ''}`}>Core</h3>
+                    <div className="space-y-1">
+                        {coreFeatures.map(f => <FeatureButton key={f.id} feature={f} isActive={activeFeature === f.id} onClick={() => setActiveFeature(f.id)} isMinimized={isSidebarMinimized} />)}
+                    </div>
+                </div>
+                <div>
+                    <h3 className={`px-3 text-xs font-semibold uppercase text-text-secondary mb-2 ${isSidebarMinimized ? 'hidden' : ''}`}>AI Tools</h3>
+                    <div className="space-y-1">
+                        {aiTools.map(f => <FeatureButton key={f.id} feature={f} isActive={activeFeature === f.id} onClick={() => setActiveFeature(f.id)} isMinimized={isSidebarMinimized} />)}
+                    </div>
+                </div>
+            </nav>
+
+            <div className="px-4 py-4">
+                <div className="space-y-1">
+                     <button onClick={() => setActiveFeature('premium')} className={`flex items-center w-full p-3 rounded-lg transition-colors duration-200 bg-gradient-to-r from-cyan-500 to-yellow-400 text-white ${isSidebarMinimized ? 'justify-center' : ''}`}>
+                        <PremiumIcon />
+                        {!isSidebarMinimized && <span className="ml-4 font-bold">Upgrade to Pro</span>}
+                    </button>
+                    {isLoggedIn && profileAndSettings.map(f => <FeatureButton key={f.id} feature={f} isActive={activeFeature === f.id} onClick={() => setActiveFeature(f.id)} isMinimized={isSidebarMinimized} />)}
+                </div>
+            </div>
+        </aside>
+    );
 };
 
 export default Sidebar;

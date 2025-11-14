@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Language, Lesson, UserLessonStats } from './types';
+import { Language, Lesson, UserLessonStats, Difficulty, FeatureId } from './types';
 import { PageHeader } from './PageHeader';
 import LearningPath from './LearningPath';
 import LessonModal from './LessonModal';
@@ -28,11 +28,13 @@ interface LessonsProps {
   setNativeLanguage: (language: Language) => void;
   setLearningLanguage: (language: Language) => void;
   addXp: (amount: number) => void;
+  setActiveFeature: (feature: FeatureId) => void;
 }
 
-const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, addXp }) => {
+const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, addXp, setActiveFeature }) => {
     const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
     const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+    const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('Easy');
     const [userStats, setUserStats] = useState<UserLessonStats>({
         level: 1,
         xp: 0,
@@ -90,11 +92,28 @@ const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, set
                 learningLanguage={learningLanguage}
                 setNativeLanguage={setNativeLanguage}
                 setLearningLanguage={setLearningLanguage}
+                setActiveFeature={setActiveFeature}
             />
 
             <LessonStats stats={userStats} />
 
-            <div className="flex-1 overflow-y-auto mt-4">
+            <div className="my-6 max-w-4xl mx-auto w-full flex items-center gap-4">
+                <label htmlFor="difficulty-select" className="text-sm font-medium text-text-secondary whitespace-nowrap">Quiz Difficulty:</label>
+                <select
+                    id="difficulty-select"
+                    value={selectedDifficulty}
+                    onChange={(e) => setSelectedDifficulty(e.target.value as Difficulty)}
+                    className="w-full max-w-xs bg-background-secondary rounded-md p-2 text-sm text-text-primary border border-background-tertiary/50 focus:ring-1 focus:ring-accent-primary focus:outline-none"
+                >
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                    <option value="Expert">Expert</option>
+                </select>
+                <p className="text-xs text-text-secondary">This setting only affects Quiz lessons.</p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
                 <LearningPath
                     units={lessonData}
                     completedLessons={completedLessons}
@@ -109,6 +128,7 @@ const Lessons: React.FC<LessonsProps> = ({ nativeLanguage, learningLanguage, set
                     onComplete={handleCompleteLesson}
                     nativeLanguage={nativeLanguage}
                     learningLanguage={learningLanguage}
+                    difficulty={selectedDifficulty}
                 />
             )}
         </div>

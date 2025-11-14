@@ -195,7 +195,7 @@ const VisualStudio: React.FC<VisualStudioProps> = (props) => {
     return (
         <LockedFeatureGate featureName="Video Generation" requiredTier="Pro" currentTier={props.subscriptionTier} setActiveFeature={props.setActiveFeature}>
         <div className="p-4 sm:p-8 h-full flex flex-col bg-background-primary text-text-primary">
-            <PageHeader title="Visual Studio" description="Create images, videos, and edit visuals with AI." {...props} />
+            <PageHeader title="Visual Studio" description="Create images, videos, and edit visuals with AI." {...props} setActiveFeature={props.setActiveFeature}/>
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
                 <div className="flex flex-col gap-6 bg-background-secondary/50 p-6 rounded-lg border border-background-tertiary/50">
                     <div className="flex bg-background-tertiary rounded-md p-1">

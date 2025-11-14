@@ -14,6 +14,14 @@ export interface ChatMessage {
   sources?: GroundingChunk[];
 }
 
+export interface TranscriptionTurn {
+    id: string;
+    speaker: 'user' | 'model';
+    text: string;
+    feedback?: string | null;
+    isFeedbackLoading?: boolean;
+}
+
 export type TutorStyle = 'Standard' | 'Patient' | 'Concise';
 export type TtsProvider = 'Gemini' | 'ElevenLabs';
 export type SttProvider = 'Gemini' | 'Whisper' | 'Deepgram';
@@ -38,8 +46,7 @@ export type FeatureId =
   | 'translator'
   | 'lessons'
   | 'learningHub' // Renamed from masteryHub
-  | 'liveConvo'
-  | 'tts'
+  | 'speechAnalysis' // This ID now corresponds to the new AccentCoach feature
   | 'visualStudio'
   | 'grounding'
   | 'contentAnalyzer'
@@ -88,6 +95,26 @@ export interface TranslationAnalysis {
     alternativeTranslations: string[];
 }
 
+// For the new Speech Analysis feature
+export interface WordFeedback {
+  word: string;
+  accuracy: 'correct' | 'minor_error' | 'major_error' | 'mispronounced';
+  feedback: string;
+  ipa?: string;
+}
+
+export interface SpeechAnalysisResult {
+  overallScore: number; // 0-100
+  transcription: string;
+  wordByWordFeedback: WordFeedback[];
+  prosodyFeedback: {
+    rhythm: string;
+    intonation: string;
+  };
+  mainTip: string;
+}
+
+
 // For the new onboarding flow
 export type ExperienceLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Fluent';
 export type UserGoal = 'Travel' | 'Career' | 'School' | 'Connect' | 'Brain Training' | 'Cultural Immersion';
@@ -115,6 +142,7 @@ export interface Lesson {
   type: LessonType;
   description: string;
   xp: number; // For gamification
+  difficulty?: Difficulty;
 }
 
 export interface Unit {
@@ -126,6 +154,7 @@ export interface Unit {
 
 export type LessonStatus = 'locked' | 'active' | 'completed';
 
+export type Difficulty = 'Easy' | 'Medium' | 'Hard' | 'Expert';
 
 // For the new Mastery Hub feature
 export interface MasteryLevel {
@@ -135,6 +164,7 @@ export interface MasteryLevel {
   description: string;
   type: LessonType;
   xp: number;
+  difficulty: Difficulty;
 }
 
 export interface MasteryTier {
@@ -252,5 +282,20 @@ declare global {
     // webkitAudioContext is for Safari
     webkitAudioContext: typeof AudioContext;
     aistudio?: AIStudio;
+  }
+  
+  // FIX: This augments the global JSX namespace to include the custom 'spline-viewer' element.
+  // Because this 'types.ts' file is a module (it has imports/exports), this declaration
+  // will merge with the default React JSX types rather than overwriting them.
+  namespace JSX {
+    interface IntrinsicElements {
+      'spline-viewer': any;
+      // FIX: The broad index signature that was previously here (`[elemName: string]: any;`) was
+      // likely interfering with TypeScript's JSX namespace merging, causing `JSX.Element`
+      // not to be found. Removing it allows standard React types to be merged correctly.
+      // RE-ADDITION: The removal was incorrect and broke all intrinsic elements. Adding an index
+      // signature back to allow standard elements like 'div', 'p', etc.
+      [elemName: string]: any;
+    }
   }
 }

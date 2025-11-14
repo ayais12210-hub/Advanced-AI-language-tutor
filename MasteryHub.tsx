@@ -28,7 +28,7 @@ interface LearningHubProps {
   stats: { xpPoints: number }; // Receive total XP from App
 }
 
-const LearningHub: React.FC<LearningHubProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, addXp, stats }) => {
+const LearningHub: React.FC<LearningHubProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, addXp, stats, setActiveFeature }) => {
     const [completedLevels, setCompletedLevels] = useState<Set<string>>(new Set());
     const [activeLevel, setActiveLevel] = useState<MasteryLevel | null>(null);
 
@@ -79,6 +79,7 @@ const LearningHub: React.FC<LearningHubProps> = ({ nativeLanguage, learningLangu
                 learningLanguage={learningLanguage}
                 setNativeLanguage={setNativeLanguage}
                 setLearningLanguage={setLearningLanguage}
+                setActiveFeature={setActiveFeature}
             />
 
             <UserStatsDisplay stats={userDisplayStats} />

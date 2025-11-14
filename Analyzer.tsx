@@ -260,7 +260,13 @@ const SourcesTab: React.FC<{notebook: Notebook, onUpdate: (updateFn: (prev: Note
             else if ((type === 'website' || type === 'youtube') && typeof data === 'string') content = await summarizeUrl(data);
             else if (type === 'text' && typeof data === 'string') content = data;
             else if (data instanceof File) content = `[Simulated content for ${title}]`; // Placeholder for PDF/GDoc
-        } catch (e) { console.error(e); error = e; content = `Error processing source: ${title}`; }
+        } catch (e: any) {
+             console.error(e);
+             error = e;
+             content = `Error processing source: ${title}`;
+             const errorMessage = e?.toString().includes('quota') ? "API quota exceeded." : `Failed to process source "${title}". Please check the file/URL and try again.`;
+             alert(errorMessage);
+        }
 
         onUpdate(prev => ({ ...prev, sources: prev.sources.map(s => s.id === sourceId ? { ...s, content, isLoading: false, title: error ? `FAILED: ${s.title}`: s.title } : s) }));
     };

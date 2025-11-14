@@ -1,5 +1,5 @@
 import React from 'react';
-import { MasteryLevel, LessonType } from './types';
+import { MasteryLevel, LessonType, Difficulty } from './types';
 
 type NodeStatus = 'locked' | 'active' | 'completed';
 
@@ -13,6 +13,14 @@ const LevelIcon: React.FC<{ type: LessonType }> = ({ type }) => {
     };
     return <span className="text-3xl">{icons[type] || '⭐'}</span>;
 };
+
+const difficultyColors: Record<Difficulty, string> = {
+    Easy: 'bg-green-500/20 text-green-300',
+    Medium: 'bg-blue-500/20 text-blue-300',
+    Hard: 'bg-orange-500/20 text-orange-300',
+    Expert: 'bg-red-500/20 text-red-300',
+};
+
 
 interface MasteryNodeProps {
     level: MasteryLevel;
@@ -31,11 +39,18 @@ const MasteryNode: React.FC<MasteryNodeProps> = ({ level, status, onClick }) => 
         <button
             onClick={onClick}
             disabled={status === 'locked'}
-            className={`relative w-32 h-32 rounded-lg border-4 flex flex-col items-center justify-center p-2 text-center transition-all duration-300 transform hover:scale-105 z-10 ${statusClasses[status]}`}
-            aria-label={`${level.title}, Status: ${status}`}
+            className={`relative w-32 h-32 rounded-lg border-4 flex flex-col items-center justify-between p-2 text-center transition-all duration-300 transform hover:scale-105 z-10 ${statusClasses[status]}`}
+            aria-label={`${level.title}, Status: ${status}, Difficulty: ${level.difficulty}`}
         >
-            <LevelIcon type={level.type} />
-            <span className="text-xs font-bold mt-1 leading-tight">{level.title}</span>
+            <div>
+                <LevelIcon type={level.type} />
+                <span className="block text-xs font-bold mt-1 leading-tight">{level.title}</span>
+            </div>
+            
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${difficultyColors[level.difficulty]}`}>
+                {level.difficulty}
+            </span>
+
             <div className="absolute -top-3 -right-3 bg-accent-secondary text-background-primary text-xs font-bold px-2 py-0.5 rounded-full">
                 {level.xp} XP
             </div>

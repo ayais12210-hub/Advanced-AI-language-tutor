@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { Lesson, Language, TranslationAnalysis, MasteryLevel } from './types';
+import { Lesson, Language, TranslationAnalysis, MasteryLevel, Difficulty } from './types';
 import { TranslationAnalysisCard } from './TranslationAnalysis';
 import PhoneticsGame from './PhoneticsGame';
 import ListeningComprehensionGame from './ListeningComprehensionGame';
@@ -254,7 +254,7 @@ const PhrasesLesson: React.FC<{ lesson: Lesson | MasteryLevel, nativeLanguage: L
 };
 
 
-const QuizLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language }> = ({ lesson, onComplete, learningLanguage, nativeLanguage }) => {
+const QuizLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => void, learningLanguage: Language, nativeLanguage: Language, difficulty: Difficulty }> = ({ lesson, onComplete, learningLanguage, nativeLanguage, difficulty }) => {
     const [questions, setQuestions] = useState<any[]>([]);
     const [error, setError] = useState<string|null>(null);
     const [loading, setLoading] = useState(true);
@@ -268,10 +268,9 @@ const QuizLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => vo
             setError(null);
             try {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-                // For a real quiz, we'd want to make this prompt more robust, maybe based on previous lessons
                 const response = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
-                    contents: `Generate a 4-question multiple choice quiz about basic ${learningLanguage.name} vocabulary (greetings, numbers). Provide a JSON array where each object has "question" (in ${nativeLanguage.name}), "options" (an array of 4 strings in ${learningLanguage.name}), and "answer" (the correct string from options).`,
+                    contents: `Generate a 4-question multiple choice quiz with a difficulty of "${difficulty}" for a user learning ${learningLanguage.name}. The quiz should be about the topic: "${lesson.title}". The questions should be in ${nativeLanguage.name} and the options should be in ${learningLanguage.name}. Provide a JSON array where each object has "question" (string), "options" (array of 4 strings), and "answer" (the correct string from options).`,
                     config: {
                         responseMimeType: "application/json",
                         responseSchema: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { question: { type: Type.STRING }, options: { type: Type.ARRAY, items: { type: Type.STRING } }, answer: { type: Type.STRING } } } }
@@ -286,7 +285,7 @@ const QuizLesson: React.FC<{ lesson: Lesson | MasteryLevel, onComplete: () => vo
             }
         };
         generateQuiz();
-    }, [learningLanguage.name, nativeLanguage.name]);
+    }, [learningLanguage.name, nativeLanguage.name, lesson.title, difficulty]);
 
     const handleAnswer = (option: string) => {
         if (selectedAnswer) return;
@@ -463,9 +462,10 @@ interface LessonModalProps {
     onComplete: (lessonId: string) => void;
     nativeLanguage: Language;
     learningLanguage: Language;
+    difficulty: Difficulty;
 }
 
-const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, nativeLanguage, learningLanguage }) => {
+const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, nativeLanguage, learningLanguage, difficulty }) => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
     const generateAlphabet = useCallback(async (lang: Language) => {
@@ -516,7 +516,7 @@ const LessonModal: React.FC<LessonModalProps> = ({ lesson, onClose, onComplete, 
             case 'grammar':
                 return <PhrasesLesson lesson={lesson} nativeLanguage={nativeLanguage} learningLanguage={learningLanguage} />;
             case 'quiz':
-                return <QuizLesson lesson={lesson} onComplete={() => onComplete(lesson.id)} nativeLanguage={nativeLanguage} learningLanguage={learningLanguage} />;
+                return <QuizLesson lesson={lesson} onComplete={() => onComplete(lesson.id)} nativeLanguage={nativeLanguage} learningLanguage={learningLanguage} difficulty={difficulty} />;
             case 'nouns':
                 return <GridLesson title="Common Nouns" itemType="noun" language={learningLanguage} generateItems={generateNouns} />;
             case 'vowels':

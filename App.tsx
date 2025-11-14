@@ -5,10 +5,8 @@ import { badgeMasterList } from './achievements';
 import Sidebar from './Sidebar';
 import Chat from './Chat';
 import VisualStudio from './VisualStudio';
-import LiveConvo from './LiveConvo';
 import Grounding from './Grounding';
 import Analyzer from './Analyzer';
-import TTS from './TTS';
 import LandingPage from './LandingPage';
 import Translator from './Translator';
 import Lessons from './Lessons';
@@ -18,17 +16,17 @@ import Help from './Help';
 import PrivacyPolicy from './PrivacyPolicy';
 import Profile from './Profile';
 import Premium from './Premium';
+import AccentCoach from './AccentCoach';
 
 const featureComponents: { [key in FeatureId]: React.ComponentType<any> } = {
   chat: Chat,
   translator: Translator,
   lessons: Lessons,
   learningHub: LearningHub,
+  speechAnalysis: AccentCoach,
   visualStudio: VisualStudio,
-  liveConvo: LiveConvo,
   grounding: Grounding,
   contentAnalyzer: Analyzer,
-  tts: TTS,
   settings: Settings,
   help: Help,
   privacyPolicy: PrivacyPolicy,
@@ -62,7 +60,8 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch
 
 const App: React.FC = () => {
   const [showDashboard, setShowDashboard] = usePersistentState('showDashboard', false);
-  const [activeFeature, setActiveFeature] = useState<FeatureId>('settings');
+  const [activeFeature, setActiveFeature] = useState<FeatureId>('speechAnalysis');
+  const [isSidebarMinimized, setIsSidebarMinimized] = usePersistentState('isSidebarMinimized', false);
   const [nativeLanguage, setNativeLanguage] = usePersistentState<Language>('nativeLanguage', languages.find(l => l.code === 'en') || languages[0]);
   const [learningLanguage, setLearningLanguage] = usePersistentState<Language>('learningLanguage', languages.find(l => l.code === 'es') || languages[1]);
   
@@ -189,6 +188,8 @@ const App: React.FC = () => {
         activeFeature={activeFeature} 
         setActiveFeature={setActiveFeature}
         isLoggedIn={isLoggedIn}
+        isSidebarMinimized={isSidebarMinimized}
+        setIsSidebarMinimized={setIsSidebarMinimized}
       />
       <main className="flex-1 overflow-y-auto">
         <ActiveComponent 

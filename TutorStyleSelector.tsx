@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { TutorStyle, ModelId, ModelProvider, SubscriptionTier, FeatureId, TtsProvider, ThinkingPreset } from './types';
+import React from 'react';
+import { TutorStyle, ModelId, ModelProvider, SubscriptionTier, FeatureId, TtsProvider, ThinkingPreset, Emotion, Language } from './types';
 import { tierLevels } from './LockedFeatureGate';
 
 interface Model {
@@ -66,6 +66,17 @@ interface ChatSettingsProps {
     onTtsProviderChange: (provider: TtsProvider) => void;
     subscriptionTier: SubscriptionTier;
     setActiveFeature: (feature: FeatureId) => void;
+    // Newly added props
+    thinkingPreset: ThinkingPreset;
+    onThinkingPresetChange: (preset: ThinkingPreset) => void;
+    emotionMode: 'Auto' | 'Manual';
+    onEmotionModeChange: (mode: 'Auto' | 'Manual') => void;
+    manualEmotion: Emotion;
+    onManualEmotionChange: (emotion: Emotion) => void;
+    sttLanguageCode: string;
+    onSttLanguageCodeChange: (code: string) => void;
+    nativeLanguage: Language;
+    learningLanguage: Language;
 }
 
 const LockIcon = () => (
@@ -101,7 +112,7 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: (checked: boolean) =>
 };
 
 const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode, defaultOpen?: boolean }> = ({ title, children, defaultOpen = false }) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
+    const [isOpen, setIsOpen] = React.useState(defaultOpen);
     return (
         <div>
             <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center text-left text-sm font-medium text-text-secondary p-2 rounded-md hover:bg-background-tertiary/50">
@@ -119,10 +130,9 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({
     currentModel, onModelChange,
     isGrounded, onGroundedChange,
     ttsProvider, onTtsProviderChange,
-    subscriptionTier, setActiveFeature
+    subscriptionTier, setActiveFeature,
+    thinkingPreset, onThinkingPresetChange,
 }) => {
-    const [thinkingPreset, setThinkingPreset] = useState<ThinkingPreset>('auto');
-
     if (!isOpen) return null;
 
     const handleModelChange = (model: Model) => {
@@ -197,7 +207,7 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({
                              {thinkingPresets.map(preset => {
                                 const isSelected = thinkingPreset === preset.id;
                                 return (
-                                <button key={preset.id} onClick={() => setThinkingPreset(preset.id)} className={`w-full text-left p-2 rounded-md transition-colors flex items-center gap-3 ${isSelected ? 'bg-accent-primary/10' : 'hover:bg-background-tertiary/50'}`}>
+                                <button key={preset.id} onClick={() => onThinkingPresetChange(preset.id)} className={`w-full text-left p-2 rounded-md transition-colors flex items-center gap-3 ${isSelected ? 'bg-accent-primary/10' : 'hover:bg-background-tertiary/50'}`}>
                                      <div className="w-5 flex justify-center">
                                          {isSelected && <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4 text-accent-primary"><path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.35 2.35 4.493-6.74a.75.75 0 0 1 1.04-.207z" clipRule="evenodd" /></svg>}
                                     </div>

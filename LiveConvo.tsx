@@ -61,14 +61,26 @@ interface LiveConvoProps {
   setLearningLanguage: (language: Language) => void;
   subscriptionTier: SubscriptionTier;
   setActiveFeature: (feature: FeatureId) => void;
+  sttProvider: SttProvider;
+  ttsProvider: TtsProvider;
 }
 
-const LiveConvo: React.FC<LiveConvoProps> = ({ nativeLanguage, learningLanguage, setNativeLanguage, setLearningLanguage, subscriptionTier, setActiveFeature }) => {
+const LiveConvo: React.FC<LiveConvoProps> = ({ 
+    nativeLanguage, 
+    learningLanguage, 
+    setNativeLanguage, 
+    setLearningLanguage, 
+    subscriptionTier, 
+    setActiveFeature,
+    sttProvider: globalSttProvider,
+    ttsProvider: globalTtsProvider,
+}) => {
     const [isLive, setIsLive] = useState(false);
     const [status, setStatus] = useState<'idle' | 'connecting' | 'live' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [transcription, setTranscription] = useState<TranscriptionTurn[]>([]);
-    const [sttProvider, setSttProvider] = useState<SttProvider>('Gemini');
-    const [ttsProvider, setTtsProvider] = useState<TtsProvider>('Gemini');
+    const [sttProvider, setSttProvider] = useState<SttProvider>(globalSttProvider);
+    const [ttsProvider, setTtsProvider] = useState<TtsProvider>(globalTtsProvider);
     
     const sessionRef = useRef<Promise<any> | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -132,6 +144,7 @@ const LiveConvo: React.FC<LiveConvoProps> = ({ nativeLanguage, learningLanguage,
     const startSession = async () => {
         if (isLive) stopSession();
         setStatus('connecting');
+        setErrorMessage(null);
         setTranscription([]);
 
         try {
@@ -213,9 +226,14 @@ const LiveConvo: React.FC<LiveConvoProps> = ({ nativeLanguage, learningLanguage,
                     onerror: (e: ErrorEvent) => {
                         console.error('Session Error:', e);
                         setStatus('error');
+                        setErrorMessage(`An error occurred: ${e.message}. Please try starting the session again.`);
                         stopSession();
                     },
                     onclose: (e: CloseEvent) => {
+                        if (!e.wasClean) {
+                           setStatus('error');
+                           setErrorMessage("The connection was closed unexpectedly. Please try again.");
+                        }
                         stopSession();
                     },
                 },
@@ -228,9 +246,14 @@ const LiveConvo: React.FC<LiveConvoProps> = ({ nativeLanguage, learningLanguage,
                 },
             });
             sessionRef.current = sessionPromise;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to start session:", error);
             setStatus('error');
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                setErrorMessage("Microphone permission was denied. Please enable it in your browser settings to use this feature.");
+            } else {
+                setErrorMessage("Could not start session. Please ensure your microphone is connected and try again.");
+            }
         }
     };
     
@@ -274,6 +297,7 @@ const LiveConvo: React.FC<LiveConvoProps> = ({ nativeLanguage, learningLanguage,
                     learningLanguage={learningLanguage}
                     setNativeLanguage={setNativeLanguage}
                     setLearningLanguage={setLearningLanguage}
+                    setActiveFeature={setActiveFeature}
                 />
                 <div className="flex-1 flex flex-col bg-background-secondary/50 rounded-lg border border-background-tertiary/50 overflow-hidden mt-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border-b border-background-tertiary/50">
@@ -303,6 +327,11 @@ const LiveConvo: React.FC<LiveConvoProps> = ({ nativeLanguage, learningLanguage,
                             {isLive ? 'End Session' : 'Start Speaking'}
                         </button>
                     </div>
+                     {errorMessage && status === 'error' && (
+                        <div className="p-4 bg-red-500/10 text-red-400 text-sm text-center" role="alert">
+                            {errorMessage}
+                        </div>
+                    )}
                     <div className="flex-1 overflow-y-auto p-6 space-y-4">
                         {transcription.length === 0 && (
                             <div className="text-center text-text-secondary h-full flex flex-col items-center justify-center">
